@@ -23,6 +23,7 @@ class TRApi:
         self.sessionToken = None
         self.refreshToken = None
         self.mu = asyncio.Lock()
+        self.started = False
 
         types = ["cash", "portfolio", "availableCash"]
 
@@ -71,7 +72,9 @@ class TRApi:
         )
 
         # The user is currently signed in with a different device
-        if res.status_code == 401 and not kwargs.get("already_tried_registering", False):
+        if res.status_code == 401 and not kwargs.get(
+            "already_tried_registering", False
+        ):
             self.register_new_device()
             self.login(already_tried_registering=True)
 
@@ -153,10 +156,32 @@ class TRApi:
             key=f"ticker {isin}",
         )
 
+    async def stock_details(self, isin, callback=print):
+        await self.sub(
+            "stockDetails",
+            callback=callback,
+            payload={"type": "stockDetails", "id": isin},
+            key=f"stockDetails {isin}",
+        )
+
     async def available_cash(self, callback=print):
         await self.sub("availableCash", callback)
 
+    async def derivativ_details(self, isin):
+        return await self.sub(
+            "instrument",
+            payload={"type": "instrument", "id": isin},
+            callback=print,
+            key=f"instrument {isin}",
+        )
+
     async def start(self):
+        async with self.mu:
+            if self.started:
+                raise Exception("TrApi has already been started")
+
+            self.started = True
+
         while True:
             data = await self.get_data()
 
@@ -178,8 +203,11 @@ class TRApi:
                 print("Unrecognized state ", state, " data ", data)
                 continue
 
+            if isinstance(data, list):
+                data = " ".join(data)
+
             self.latest_response[id] = data
-            obj = json.loads(self.latest_response[id])
+            obj = json.loads(data)
 
             key = None
             for k, v in self.dict.items():
@@ -242,7 +270,7 @@ class TRApi:
 
             if instruction == "=":
                 num = int(rst)
-                rsp += latest[cur: (cur + num)]
+                rsp += latest[cur : (cur + num)]
                 cur += num
             elif instruction == "-":
                 cur += int(rst)
