@@ -28,15 +28,12 @@ async def main():
     # if wanted, default is print
     await tr.cash(callback=lambda x: print(f"Cash data: {x}"))
     await tr.portfolio()
-    
-    # This will open up 3,500 websocket connections
-    # to TradeRepublic with each being a single 
-    # trade able stock.
-    for isin in TRApi.all_isins():
 
-        # Default callback for the data is print
-        # and here we use our custom callback
-        await tr.ticker(isin, callback=process)
+    isin = "US62914V1061"
+    await tr.derivativ_details(isin)
+    await tr.stock_details(isin)
+    await tr.ticker(isin, callback=process)
+    await tr.news(isin) 
     
     await tr.start()
 
