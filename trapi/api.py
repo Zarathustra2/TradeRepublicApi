@@ -164,6 +164,14 @@ class TRApi:
             key=f"stockDetails {isin}",
         )
 
+    async def news(self, isin, callback=print):
+        await self.sub(
+            "neonNews",
+            callback=callback,
+            payload={"type": "neonNews", "isin": isin},
+            key=f"news {isin}",
+        )
+
     async def available_cash(self, callback=print):
         await self.sub("availableCash", callback)
 
