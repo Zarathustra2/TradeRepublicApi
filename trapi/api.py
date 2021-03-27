@@ -67,13 +67,18 @@ class TRApi:
             print("no")
 
     def login(self, **kwargs):
-        res = self.do_request(
-            "/api/v1/auth/login", payload={"phoneNumber": self.number, "pin": self.pin}
-        )
+
+        res = None
+        if os.path.isfile("key"):
+            res = self.do_request(
+                "/api/v1/auth/login",
+                payload={"phoneNumber": self.number, "pin": self.pin},
+            )
 
         # The user is currently signed in with a different device
-        if res.status_code == 401 and not kwargs.get(
-            "already_tried_registering", False
+        if res == None or (
+            res.status_code == 401
+            and not kwargs.get("already_tried_registering", False)
         ):
             self.register_new_device()
             self.login(already_tried_registering=True)
