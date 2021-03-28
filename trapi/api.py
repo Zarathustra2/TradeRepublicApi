@@ -180,13 +180,27 @@ class TRApi:
     async def available_cash(self, callback=print):
         await self.sub("availableCash", callback)
 
-    async def derivativ_details(self, isin):
+    async def derivativ_details(self, isin, callback=print):
         return await self.sub(
             "instrument",
             payload={"type": "instrument", "id": isin},
-            callback=print,
+            callback=callback,
             key=f"instrument {isin}",
         )
+
+    async def port_hist(self, range="max", callback=print):
+        l = ["1d", "5d", "1m", "3m", "1y", "max"]
+        if range not in l:
+            raise Exception(f"Range of time must be either one of {l}")
+        return await self.sub(
+            "portfolioAggregateHistory",
+            payload={"type": "portfolioAggregateHistory", "range": range},
+            callback=callback,
+            key=f"portfolioAggregateHistory {range}",
+        )
+
+    async def curr_orders(self, callback=print):
+        return await self.sub("orders", callback)
 
     async def start(self):
         async with self.mu:
