@@ -202,6 +202,22 @@ class TRApi:
     async def curr_orders(self, callback=print):
         return await self.sub("orders", callback)
 
+    async def hist(self, after=None, callback=print):
+        return await self.sub(
+            "timeline",
+            payload={"type": "timeline", "after": after},
+            callback=callback,
+            key=f"timeline {after}",
+        )
+
+    async def hist_event(self, id, callback=print):
+        return await self.sub(
+            "timelineDetail",
+            payload={"type": "timelineDetail", "id": id},
+            callback=callback,
+            key=f"timelineDetail {id}",
+        )
+
     async def start(self):
         async with self.mu:
             if self.started:
