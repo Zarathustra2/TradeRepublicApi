@@ -218,7 +218,7 @@ class TRApi:
             key=f"timelineDetail {id}",
         )
 
-    async def start(self):
+    async def start(self, receive_one=False):
         async with self.mu:
             if self.started:
                 raise Exception("TrApi has already been started")
@@ -265,6 +265,12 @@ class TRApi:
             elif isinstance(obj, dict):
                 obj["key"] = key
 
+            if receive_one:
+                self.started = False
+                self.callbacks = {}
+
+                self.latest_response = {}
+                return obj
             self.callbacks[id](obj)
 
     @classmethod
@@ -323,3 +329,33 @@ class TRApi:
                 raise Exception
 
         return rsp
+
+
+class TrBlockingApi(TRApi):
+    def __init__(self, number, pin, timeout=20.0):
+        self.timeout = timeout
+        super().__init__(number, pin)
+
+    async def get_one(self, f):
+        await f
+        res = None
+        try:
+            res = await asyncio.wait_for(
+                super().start(receive_one=True), timeout=self.timeout
+            )
+            return res
+        except Exception:
+            return None
+
+    def cash(self):
+        return asyncio.get_event_loop().run_until_complete(self.get_one(super().cash()))
+
+    def hist(self, after=None):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().hist(after=after))
+        )
+
+    def hist_event(self, id):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().hist_event(id=id))
+        )

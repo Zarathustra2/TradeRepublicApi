@@ -14,7 +14,25 @@ So if you are currently logged in on your phone it will log you out from your ph
 Also running it the first time will likely error but then running it for the second
 time will work. Have to debug this but not much time.
 
-## Example
+## Example blocking history
+```python3
+from api import TrBlockingApi
+
+# This will go through your most recent history events
+# and print it on the terminal
+def main():
+
+    tr = TrBlockingApi(NUMBER, PIN)
+    tr.login()
+
+    res = tr.hist()
+    print(res.keys())
+    for x in res["data"]:
+        print(tr.hist_event(x["data"]["id"]))
+```
+
+
+## Example async
 ```python3
 
 def process(json_data):
@@ -40,3 +58,5 @@ async def main():
 if __name__ == '__main__':
     asyncio.get_event_loop().run_until_complete(main())
 ```
+
+
