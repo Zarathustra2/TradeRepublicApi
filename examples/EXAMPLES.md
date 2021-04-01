@@ -1,6 +1,9 @@
 # Beispiele
 Für diese Beispiele die Datei environment_template.py in environment.py umbenennen und die Trade Republic Login Datein eintragen.
 
+# ISINs
+Manche Unternehmensnamen können nicht automatisch gefunden werden. Um dennoch die ISINs automatisch im Export zu verwenden, können diese in der Datei companyNameIsins.json beliebig hinzugefügt werden.
+
 # Skripte
 Folgende Skripte bilden ein Workspace um Aktien und Transaktionen von Trade Republic abzurufen und zu verarbeiten.
 
@@ -43,6 +46,7 @@ Konvertiert die Timeline in ein CSV Format. Damit dieses Skript richtig arbeitet
 *ACHTUNG:* Einige Aktien heißen bei Lang und Schwarz anders, als in der Trade Republic App. Außerdem verwendet Trade Republic selbst zum Teil unterschiedliche Namen. Es kann vorkommen, dass nicht zu jeder Aktie die ISIN automatisch zugeordnet wird. In diesem Fall wird ein Fehler ausgegeben und die ISIN muss manuell in die CSV Datei kopiert werde.
 
 Der Export wurde für Portfolio Performance optimiert. Aktuell werden folgende Transaktionen verarbeitet:
+- Auszahlung
 - Einzahlung
 - Kauf
 - Sparplan Ausführung
