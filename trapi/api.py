@@ -355,7 +355,27 @@ class TrBlockingApi(TRApi):
             self.get_one(super().hist(after=after))
         )
 
+    def stock_details(self, isin):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().stock_details(isin))
+        )
+
     def hist_event(self, id):
         return asyncio.get_event_loop().run_until_complete(
             self.get_one(super().hist_event(id=id))
+        )
+
+    def portfolio(self):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().portfolio())
+        )
+
+    def cash(self):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().cash())
+        )
+
+    def available_cash(self):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().available_cash())
         )
