@@ -6,3 +6,12 @@ key
 
 __pycache__
 trapi/__pycache__
+
+myTimeline.json
+myPortfolioWithStocks.json
+myPortfolio.json
+allStocks.json
+stock_details/
+environment.py
+myPositions.csv
+myTransactions.csv
