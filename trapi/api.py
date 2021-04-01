@@ -355,6 +355,26 @@ class TrBlockingApi(TRApi):
             self.get_one(super().hist(after=after))
         )
 
+    def news(self, isin):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().news(isin))
+        )
+
+    def curr_orders(self):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().curr_orders())
+        )
+
+    def port_hist(self, range="max"):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().port_hist(range=range))
+        )
+
+    def derivativ_details(self, isin):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().derivativ_details(isin))
+        )
+
     def stock_details(self, isin):
         return asyncio.get_event_loop().run_until_complete(
             self.get_one(super().stock_details(isin))
@@ -371,9 +391,7 @@ class TrBlockingApi(TRApi):
         )
 
     def cash(self):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().cash())
-        )
+        return asyncio.get_event_loop().run_until_complete(self.get_one(super().cash()))
 
     def available_cash(self):
         return asyncio.get_event_loop().run_until_complete(
