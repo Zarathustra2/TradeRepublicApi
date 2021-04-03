@@ -3,22 +3,22 @@ import re
 from datetime import datetime
 
 # Read my timeline
-with open('myTimeline.json', 'r') as f:
+with open('myTimeline.json', 'r', encoding='utf-8') as f:
     timeline = json.loads(f.read())
 
 # Read stock JSON data
-with open('../LS/isins.json', 'r') as f:
+with open('../LS/isins.json', 'r', encoding='utf-8') as f:
     lsIsins = json.loads(f.read())
 
 # All stocks crawled from TR
-with open('allStocks.json', 'r') as f:
+with open('allStocks.json', 'r', encoding='utf-8') as f:
     allStocks = json.loads(f.read())
     companyNames = {}
     for stock in allStocks:
         companyNames[stock["company"]["name"]] = stock["isin"]
 
 # Fixed ISINs
-with open('companyNameIsins.json', 'r') as f:
+with open('companyNameIsins.json', 'r', encoding='utf-8') as f:
     fixedIsins = json.loads(f.read())
 
 
@@ -111,7 +111,7 @@ with open('myTransactions.csv', 'w') as f:
             isin = getIsinFromStockName(title)
             amountPerShare = abs(float(getDecimalFromString(body)))
             cashChangeAmount = abs(event["cashChangeAmount"])
-            shares = '{0:.4f}'.format(cashChangeAmount/amountPerShare)
+            shares = '{0:.4f}'.format((cashChangeAmount-fee)/amountPerShare)
             f.write('{0};{1};{2};{3};{4};{5};{6};{7}\n'.format(date, "Kauf", shares, amountPerShare, cashChangeAmount, fee, isin, title))
             if isin == "" and title not in missingIsins.keys():
                 missingIsins[title] = ""
