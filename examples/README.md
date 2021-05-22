@@ -19,11 +19,11 @@ Kann verwendet werden um die Stock Details abzufragen. Jede ISIN wird in einem U
 usage: isinDownloader.py [-h] [-i ISIN] [-f FILE] [-p] [-c]
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -i ISIN, --isin ISIN  Crawl single ISIN
-  -f FILE, --file FILE  Crawl a list of ISINs
-  -p, --portfolio       Crawl all stocks from myPortfolio.json
-  -c, --combine         Combine all stock data to a single JSON file
+-h, --help            show this help message and exit
+-i ISIN, --isin ISIN  Crawl single ISIN
+-f FILE, --file FILE  Crawl a list of ISINs
+-p, --portfolio       Crawl all stocks from myPortfolio.json
+-c, --combine         Combine all stock data to a single JSON file
 
 ```bash
 python3 isinDownloader.py -i US72919P2020
@@ -52,3 +52,18 @@ Der Export wurde für Portfolio Performance optimiert. Aktuell werden folgende T
 - Sparplan Ausführung
 - Verkauf
 - Dividende
+
+# Export für Portfolio Performance
+*TODO:* Aktuell ist es noch nicht möglich, reinvestierte Dividenden zu exportieren.
+Mit den folgenden Skripten kann eine CSV Datei für Portfolio Performance erzeugt werden. 
+```bash
+python3 portfolioExporter.py
+python3 timelineExporter.py
+python3 isinDownloader.py -p -c
+python3 timelineCsvConverter.py
+```
+Sollte bei der Erstellung der CSV Datei "WARNING: Company not found" auftauchen, so können fehlende ISINs in der Datei companyNameIsins.json nachgetragen werden. Ein erneutes Ausführen von 
+```bash
+python3 timelineCsvConverter.py
+```
+sollte dann einen vollständigen Export liefern.

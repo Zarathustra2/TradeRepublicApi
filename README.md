@@ -1,18 +1,14 @@
-## Trade Republic api
+## Trade Republic API
 
-This is an unofficial trade republic api as the previous owner has
-made his repo private.
+This is an unofficial API for the German broker Trade Republic.
 
-This is meant to be a follow up repo, more features to be added in the future.
+Unfortunately the previous owner has made his repo private. This is meant to be a follow-up repo, more features to be added in the future.
 
-Currently, this can be used to try out algorithmic trading
-or learning how to process a lot of data.
+Currently, this can be used to try out algorithmic trading or learning how to process a lot of data.
 
-TradeRepublic only allows one device to be registered at the same time.
-So if you are currently logged in on your phone it will log you out from your phone.
+Trade Republic only allows one device to be registered at the same time. So if you are currently logged in on your phone it will log you out from your phone.
 
-Also running it the first time will likely error but then running it for the second
-time will work. Have to debug this but not much time.
+Also running it the first time will likely error but then running it for the second time will work. Have to debug this but not much time.
 
 ## Example blocking history
 ```python3
