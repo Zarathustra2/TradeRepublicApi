@@ -81,7 +81,7 @@ class TRApi:
             and not kwargs.get("already_tried_registering", False)
         ):
             self.register_new_device()
-            self.login(already_tried_registering=True)
+            res = self.login(already_tried_registering=True)
 
         if res.status_code != 200:
             print(res.json(), res.status_code)
@@ -93,6 +93,8 @@ class TRApi:
 
         if data["accountState"] != "ACTIVE":
             raise Exception("Account not active")
+
+        return res
 
     async def sub(self, payload_key, callback, **kwargs):
         if self.ws is None:
