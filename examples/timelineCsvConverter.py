@@ -25,8 +25,8 @@ with open("companyNameIsins.json", "r", encoding="utf-8") as f:
 # Extract decimal number in a string
 def getDecimalFromString(inputString):
     try:
-        numbers = re.findall("[-+]?\d*\,\d+|\d+", inputString)
-        return numbers[0].replace(",", ".")
+        numbers = re.findall("[-+]?\d.*\,\d+|\d+", inputString)
+        return numbers[0].replace(".", "").replace(",", ".")
     except:
         return None
     return None
