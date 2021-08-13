@@ -218,10 +218,79 @@ class TRApi:
             key=f"timelineDetail {id}",
         )
 
+    async def all_orders(self, callback=print):
+        return await self.sub("orders", callback=callback)
+
+    async def order_cancel(self, id, callback=print):
+        return await self.sub(
+            "cancelOrder",
+            payload={"type": "cancelOrder", "orderId": id},
+            callback=callback,
+            key=f"cancelOrder {id}",
+        )
+
+    async def limit_order(
+        self,
+        order_id,
+        isin,
+        order_type,
+        size,
+        limit,
+        expiry,
+        exchange="LSX",
+        callback=print,
+    ):
+
+        if expiry not in ["gfd", "gtd", "gtc"]:
+            raise Exception(f"Expiry should be one of gfd, gtd, gtc, was {expiry}")
+
+        if order_type not in ["buy", "sell"]:
+            raise Exception(
+                f"order_Type should be either buy or sell, was: {order_type}"
+            )
+
+        payload = {
+            "type": "simpleCreateOrder",
+            "clientProcessId": order_id,
+            "warningsShown": ["userExperience"],
+            "acceptedWarnings": ["userExperience"],
+            "parameters": {
+                "instrumentId": isin,
+                "exchangeId": exchange,
+                "expiry": {"type": expiry},
+                "limit": limit,
+                "mode": "limit",
+                "size": size,
+                "type": order_type,
+            },
+        }
+
+        return await self.sub(
+            "simpleCreateOrder",
+            payload=payload,
+            callback=callback,
+            key=f"simpleCreateOrder {order_id}",
+        )
+
+    async def price_alarms(self, callback=print):
+        return await self.sub("priceAlarms", callback)
+
+    async def create_price_alarm(self, isin, target_price, callback=print):
+        return await self.sub(
+            "createPriceAlarm",
+            payload={
+                "type": "createPriceAlarm",
+                "instrumentId": isin,
+                "targetPrice": target_price,
+            },
+            callback=callback,
+            key=f"createPriceAlarm {isin} {target_price}",
+        )
+
     async def stock_history(self, isin, range="max", callback=print):
         l = ["1d", "5d", "1m", "3m", "1y", "max"]
         if range not in l:
-            raise Exception(f"Range of time must be either one of {l}") 
+            raise Exception(f"Range of time must be either one of {l}")
 
         return await self.sub(
             "aggregateHistory",

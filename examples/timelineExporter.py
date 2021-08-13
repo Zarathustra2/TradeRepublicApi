@@ -1,5 +1,6 @@
 import sys
-sys.path.append('../')
+
+sys.path.append("../")
 from trapi.api import TrBlockingApi
 
 from environment import *
@@ -26,5 +27,5 @@ except:
 
 
 # Write JSON file
-with open('./myTimeline.json', 'w') as f:
+with open("./myTimeline.json", "w") as f:
     json.dump(data, f, indent="\t")
