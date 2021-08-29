@@ -62,7 +62,7 @@ if not os.path.exists(OUTPUT_FOLDER):
 
 if len(isins) > 0:
     # TR Login
-    tr = TrBlockingApi(NUMBER, PIN)
+    tr = TrBlockingApi(NUMBER, PIN, locale=LOCALE)
     tr.login()
 
     # Crawl all ISINs in list
@@ -79,7 +79,7 @@ if len(isins) > 0:
                 retry = retry + 1
                 time.sleep(retry)
                 if retry >= 3:
-                    tr = TrBlockingApi(NUMBER, PIN)
+                    tr = TrBlockingApi(NUMBER, PIN, locale=LOCALE)
                     tr.login()
             else:
                 # Write JSON file

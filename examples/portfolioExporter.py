@@ -18,7 +18,7 @@ def process(jsonData):
 
 
 async def main():
-    tr = TRApi(NUMBER, PIN)
+    tr = TRApi(NUMBER, PIN, LOCALE)
     tr.login()
 
     await tr.portfolio(callback=process)

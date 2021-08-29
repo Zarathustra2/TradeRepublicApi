@@ -8,7 +8,7 @@ from environment import *
 import json
 import time
 
-tr = TrBlockingApi(NUMBER, PIN)
+tr = TrBlockingApi(NUMBER, PIN, locale=LOCALE)
 tr.login()
 
 data = []

@@ -15,9 +15,10 @@ import json
 class TRApi:
     url = "https://api.traderepublic.com"
 
-    def __init__(self, number, pin):
+    def __init__(self, number, pin, locale='en'):
         self.number = number
         self.pin = pin
+        self.locale = locale
         self.signing_key = None
         self.ws = None
         self.sessionToken = None
@@ -99,7 +100,7 @@ class TRApi:
     async def sub(self, payload_key, callback, **kwargs):
         if self.ws is None:
             self.ws = await websockets.connect("wss://api.traderepublic.com")
-            msg = json.dumps({"locale": "de"})
+            msg = json.dumps({"locale": self.locale})
             await self.ws.send(f"connect 21 {msg}")
             response = await self.ws.recv()
 
@@ -415,9 +416,9 @@ class TRApi:
 
 
 class TrBlockingApi(TRApi):
-    def __init__(self, number, pin, timeout=20.0):
+    def __init__(self, number, pin, timeout=20.0, locale="en"):
         self.timeout = timeout
-        super().__init__(number, pin)
+        super().__init__(number, pin, locale)
 
     async def get_one(self, f):
         await f

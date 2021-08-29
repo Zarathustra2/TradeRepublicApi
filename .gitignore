@@ -4,8 +4,14 @@ trapi/playground.py
 trapi/.venv
 key
 
+# Python
 __pycache__
 trapi/__pycache__
+.venv/
+
+# IDE
+.idea/
+.vscode/
 
 myTimeline.json
 myPortfolioWithStocks.json
