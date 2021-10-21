@@ -151,7 +151,7 @@ with open("myTransactions.csv", "w") as f:
                 missingIsins[title] = ""
                 print("WARNING: Company not found ({0}), missing ISIN".format(title))
         # Sell
-        elif body.startswith("Verkauf") or body.startswith("Limit Verkauf zu"):
+        elif (body.startswith("Verkauf") and not body.__contains__("Verkauf-Order abgelehnt")) or body.startswith("Limit Verkauf zu"):
             isin = getIsinFromStockName(title)
             amountPerShare = abs(float(getDecimalFromString(body)))
             cashChangeAmount = abs(event["cashChangeAmount"])
