@@ -174,9 +174,17 @@ with open("myTransactions.csv", "w") as f:
             or body.startswith("Limit Sell order")
         ):
             isin = getIsinFromStockName(title)
+            taxRate = 0.2782
+            profit = abs(float(re.findall("[-+]?\d.*\.\d+|\d+", body)[1].replace(",", "")) / 100) #as decimal (percentage)
             amountPerShare = abs(float(getDecimalFromString(body)))
             cashChangeAmount = abs(event["cashChangeAmount"])
-            shares = "{0:.4f}".format(cashChangeAmount / amountPerShare)
+            buy = (cashChangeAmount + 1) / (1 + profit - profit * taxRate)
+            sell = buy * (1 + profit)
+            taxes = sell * taxRate
+            if len(isin) > 4: #round to account for errors while calculating taxes
+                shares = "{0:.4f}".format(cashChangeAmount / amountPerShare)
+            else:
+                shares = "{0:.4f}".format(sell / amountPerShare)
             f.write(
                 "{0};{1};{2};{3};{4};{5};{6};{7}\n".format(
                     date,
