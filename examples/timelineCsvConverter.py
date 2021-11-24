@@ -1,6 +1,7 @@
 import json
 import re
 from datetime import datetime
+from environment import LOCALE
 
 # Read my timeline
 with open("myTimeline.json", "r", encoding="utf-8") as f:
@@ -65,13 +66,17 @@ def getIsinFromStockName(stockName):
 
 # Portfolio Performance transaction types
 # Kauf, Einlage, Verkauf, Zinsen, Gebühren, Dividende, Umbuchung (Eingang), Umbuchung (Ausgang)
+# Buy, Deposit, Sell, Interest, Fees, Dividends, Transfer (Inbound), Transfer (Outbound)
 
 missingIsins = {}
 
 # Write transactions.csv file
 # date, transaction, shares, amount, total, fee, isin, name
 with open("myTransactions.csv", "w") as f:
-    f.write("Datum;Typ;Stück;amount;Wert;Gebühren;ISIN;name\n")
+    if LOCALE == "de":
+        f.write("Datum;Typ;Stück;Wert;Preis;Gebühren;ISIN;Name\n")
+    else:
+        f.write("Date;Type;Amount;Value;Price;Fees;ISIN;Name\n")
     for event in timeline:
         event = event["data"]
         dateTime = datetime.fromtimestamp(int(event["timestamp"] / 1000))
@@ -83,34 +88,37 @@ with open("myTransactions.csv", "w") as f:
         except:
             body = ""
 
-        if "storniert" in body:
+        if "storniert" in body or "cancelled" in body:
             continue
 
         # Cash in
-        if title == "Einzahlung":
+        if title == "Einzahlung" or title == "Cash In":
             f.write(
                 "{0};{1};{2};{3};{4};{5};{6};{7}\n".format(
-                    date, "Einlage", "", "", event["cashChangeAmount"], "", "", ""
+                    date, "Einlage" if LOCALE == "de" else "Cash In", "", "", event["cashChangeAmount"], "", "", ""
                 )
             )
-        elif title == "Auszahlung":
+
+        elif title == "Auszahlung" or title == "Cash Out":
             f.write(
                 "{0};{1};{2};{3};{4};{5};{6};{7}\n".format(
-                    date, "Entnahme", "", "", abs(event["cashChangeAmount"]), "", "", ""
+                    date, "Entnahme" if LOCALE == "de" else "Cash Out", "", "", abs(event["cashChangeAmount"]), "", "", ""
                 )
             )
+
         # Dividend - Shares
-        elif title == "Reinvestierung":
+        elif title == "Reinvestierung" or title == "Reinvestment":
             # TODO: Implement reinvestment
-            print("Detected reivestment, skipping... (not implemented yet)")
+            print("Detected reinvestment, skipping... (not implemented yet)")
+
         # Dividend - Cash
-        elif "Gutschrift Dividende" in body:
+        elif "Gutschrift Dividende" in body or "Dividend per" in body:
             isin = getIsinFromStockName(title)
             amountPerShare = getDecimalFromString(body)
             f.write(
                 "{0};{1};{2};{3};{4};{5};{6};{7}\n".format(
                     date,
-                    "Dividende",
+                    "Dividende" if LOCALE == "de" else "Dividend",
                     "",
                     amountPerShare,
                     event["cashChangeAmount"],
@@ -122,14 +130,21 @@ with open("myTransactions.csv", "w") as f:
             if isin == "" and title not in missingIsins.keys():
                 missingIsins[title] = ""
                 print("WARNING: Company not found ({0}), missing ISIN".format(title))
+
         # Savings plan execution or normal buy
         elif (
             body.startswith("Sparplan ausgeführt")
             or body.startswith("Kauf")
             or body.startswith("Limit Kauf zu")
+            or body.startswith("Savings Plan executed")
+            or body.startswith("Buy order")
+            or body.startswith("Limit Buy order")
         ):
             fee = 0
-            if body.startswith("Kauf") or body.startswith("Limit Kauf zu"):
+            if (
+                body.startswith("Kauf") or body.startswith("Limit Kauf zu")
+                or body.startswith("Buy order") or body.startswith("Limit Buy order")
+            ):
                 fee = 1.0
             isin = getIsinFromStockName(title)
             amountPerShare = abs(float(getDecimalFromString(body)))
@@ -138,7 +153,7 @@ with open("myTransactions.csv", "w") as f:
             f.write(
                 "{0};{1};{2};{3};{4};{5};{6};{7}\n".format(
                     date,
-                    "Kauf",
+                    "Kauf" if LOCALE == "de" else "Buy",
                     shares,
                     amountPerShare,
                     cashChangeAmount,
@@ -150,8 +165,14 @@ with open("myTransactions.csv", "w") as f:
             if isin == "" and title not in missingIsins.keys():
                 missingIsins[title] = ""
                 print("WARNING: Company not found ({0}), missing ISIN".format(title))
+
         # Sell
-        elif (body.startswith("Verkauf") and not body.__contains__("Verkauf-Order abgelehnt")) or body.startswith("Limit Verkauf zu"):
+        elif (
+            (body.startswith("Verkauf") and not body.__contains__("Verkauf-Order abgelehnt"))
+            or body.startswith("Limit Verkauf zu")
+            or (body.startswith("Sell order") and not body.__contains__("Sell order declined"))
+            or body.startswith("Limit Sell order")
+        ):
             isin = getIsinFromStockName(title)
             amountPerShare = abs(float(getDecimalFromString(body)))
             cashChangeAmount = abs(event["cashChangeAmount"])
@@ -159,7 +180,7 @@ with open("myTransactions.csv", "w") as f:
             f.write(
                 "{0};{1};{2};{3};{4};{5};{6};{7}\n".format(
                     date,
-                    "Verkauf",
+                    "Verkauf" if LOCALE == "de" else "Sell",
                     shares,
                     amountPerShare,
                     cashChangeAmount,
