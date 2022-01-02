@@ -11,6 +11,16 @@ import os
 
 import json
 
+class TRapiException(Exception):
+    pass
+
+class TRapiExcServerErrorState(TRapiException):
+    pass
+
+class TRapiExcServerUnknownState(TRapiException):
+    pass
+
+
 
 class TRApi:
     url = "https://api.traderepublic.com"
@@ -86,14 +96,14 @@ class TRApi:
 
         if res.status_code != 200:
             print(res.json(), res.status_code)
-            raise Exception
+            raise TRapiException("could not login - see printed status_code")
 
         data = res.json()
         self.refreshToken = data["refreshToken"]
         self.sessionToken = data["sessionToken"]
 
         if data["accountState"] != "ACTIVE":
-            raise Exception("Account not active")
+            raise TRapiException("Account not active")
 
         return res
 
@@ -105,7 +115,7 @@ class TRApi:
             response = await self.ws.recv()
 
             if not response == "connected":
-                raise ValueError(f"Connection Error: {response}")
+                raise  TRapiException(f"Connection Error: {response}") # ValueError(f"Connection Error: {response}")
 
         payload = kwargs.get("payload", {"type": payload_key})
         payload["token"] = self.sessionToken
@@ -194,7 +204,7 @@ class TRApi:
     async def port_hist(self, range="max", callback=print):
         l = ["1d", "5d", "1m", "3m", "1y", "max"]
         if range not in l:
-            raise Exception(f"Range of time must be either one of {l}")
+            raise TRapiException(f"Range of time must be either one of {l}")
         return await self.sub(
             "portfolioAggregateHistory",
             payload={"type": "portfolioAggregateHistory", "range": range},
@@ -245,10 +255,10 @@ class TRApi:
     ):
 
         if expiry not in ["gfd", "gtd", "gtc"]:
-            raise Exception(f"Expiry should be one of gfd, gtd, gtc, was {expiry}")
+            raise TRapiException(f"Expiry should be one of gfd, gtd, gtc, was {expiry}")
 
         if order_type not in ["buy", "sell"]:
-            raise Exception(
+            raise TRapiException(
                 f"order_Type should be either buy or sell, was: {order_type}"
             )
 
@@ -293,7 +303,7 @@ class TRApi:
     async def stock_history(self, isin, range="max", callback=print):
         l = ["1d", "5d", "1m", "3m", "1y", "max"]
         if range not in l:
-            raise Exception(f"Range of time must be either one of {l}")
+            raise TRapiException(f"Range of time must be either one of {l}")
 
         return await self.sub(
             "aggregateHistory",
@@ -305,14 +315,14 @@ class TRApi:
     async def start(self, receive_one=False):
         async with self.mu:
             if self.started:
-                raise Exception("TrApi has already been started")
+                raise TRapiException("TrApi has already been started")
 
             self.started = True
 
         while True:
-            data = await self.get_data()
+            data_a = await self.get_data()
 
-            data = str(data).split()
+            data = str(data_a).split()
 
             id, state = data[:2]
 
@@ -326,9 +336,23 @@ class TRApi:
                 data = self.decode_updates(id, data)
             elif state == "A":
                 pass
-            else:
-                print("Unrecognized state ", state, " data ", data)
+            elif state == "C":
                 continue
+            elif state == "E":
+                sErr = f"ERROR state: {state} data: {data}"
+                #print(sErr)
+                if receive_one: #cleanup
+                    self.started = False
+                    self.callbacks = {}
+                    self.latest_response = {}
+                    #return None
+                raise TRapiExcServerErrorState(f"Error during server access\n\tServer-side Object probably expired...\n\t{sErr}")
+                #continue
+            else:
+                sErr = f"ERROR UNKNOWN state: {state} data: {data}"
+                print(sErr)
+                raise TRapiExcServerUnknownState(f"Error during server access\n\t{sErr}")
+                #continue
 
             if isinstance(data, list):
                 data = " ".join(data)
@@ -410,7 +434,7 @@ class TRApi:
             elif instruction == "+":
                 rsp += rst
             else:
-                raise Exception
+                raise TRapiException("Error in decode_updates()")
 
         return rsp
 
@@ -428,8 +452,9 @@ class TrBlockingApi(TRApi):
                 super().start(receive_one=True), timeout=self.timeout
             )
             return res
-        except Exception:
-            return None
+        except Exception as e:
+            raise e
+            #return None
 
     def cash(self):
         return asyncio.get_event_loop().run_until_complete(self.get_one(super().cash()))
