@@ -21,3 +21,8 @@ stock_details/
 environment.py
 myPositions.csv
 myTransactions.csv
+
+_docDownloads/
+
+# Consider removing if U want to keep all outputs
+_storedOutputs/
