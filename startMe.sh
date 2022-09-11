@@ -1,3 +1,9 @@
+
+source venv/bin/activate
+
+echo "* 1st: timeline and AND documents extraction from Trade Republic."
+echo "*      NEEDS to login to trade republic"
+echo "********************************************************************"
 python3 ./examples/timelineExporterWithDocsAndDetails.py
 
 echo " "
