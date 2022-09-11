@@ -2,6 +2,7 @@ import json
 import re
 from datetime import datetime
 from environment import LOCALE
+from environment import CURRENCY
 
 # Read my timeline
 with open("myTimeline.json", "r", encoding="utf-8") as f:
@@ -74,9 +75,9 @@ missingIsins = {}
 # date, transaction, shares, amount, total, fee, isin, name
 with open("myTransactions.csv", "w") as f:
     if LOCALE == "de":
-        f.write("Datum;Typ;Stück;Wert;Preis;Gebühren;ISIN;Name\n")
+        f.write("Datum;Typ;Stück;Wechselkurs;Wert;Gebühren;ISIN;Name;Buchungswährung\n")
     else:
-        f.write("Date;Type;Amount;Value;Price;Fees;ISIN;Name\n")
+        f.write("Date;Type;Amount;Value;Price;Fees;ISIN;Name;Currency\n")
     for event in timeline:
         event = event["data"]
         dateTime = datetime.fromtimestamp(int(event["timestamp"] / 1000))
@@ -94,15 +95,15 @@ with open("myTransactions.csv", "w") as f:
         # Cash in
         if title == "Einzahlung" or title == "Cash In":
             f.write(
-                "{0};{1};{2};{3};{4};{5};{6};{7}\n".format(
-                    date, "Einlage" if LOCALE == "de" else "Cash In", "", "", event["cashChangeAmount"], "", "", ""
+                "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
+                    date, "Einlage" if LOCALE == "de" else "Cash In", "", "", event["cashChangeAmount"], "", "", "",CURRENCY
                 )
             )
 
         elif title == "Auszahlung" or title == "Cash Out":
             f.write(
-                "{0};{1};{2};{3};{4};{5};{6};{7}\n".format(
-                    date, "Entnahme" if LOCALE == "de" else "Cash Out", "", "", abs(event["cashChangeAmount"]), "", "", ""
+                "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
+                    date, "Entnahme" if LOCALE == "de" else "Cash Out", "", "", abs(event["cashChangeAmount"]), "", "", "",CURRENCY
                 )
             )
 
@@ -116,7 +117,7 @@ with open("myTransactions.csv", "w") as f:
             isin = getIsinFromStockName(title)
             amountPerShare = getDecimalFromString(body)
             f.write(
-                "{0};{1};{2};{3};{4};{5};{6};{7}\n".format(
+                "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
                     date,
                     "Dividende" if LOCALE == "de" else "Dividend",
                     "",
@@ -125,6 +126,7 @@ with open("myTransactions.csv", "w") as f:
                     "",
                     isin,
                     title,
+                    CURRENCY,
                 )
             )
             if isin == "" and title not in missingIsins.keys():
@@ -151,7 +153,7 @@ with open("myTransactions.csv", "w") as f:
             cashChangeAmount = abs(event["cashChangeAmount"])
             shares = "{0:.4f}".format((cashChangeAmount - fee) / amountPerShare)
             f.write(
-                "{0};{1};{2};{3};{4};{5};{6};{7}\n".format(
+                "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
                     date,
                     "Kauf" if LOCALE == "de" else "Buy",
                     shares,
@@ -160,6 +162,7 @@ with open("myTransactions.csv", "w") as f:
                     fee,
                     isin,
                     title,
+                    CURRENCY,
                 )
             )
             if isin == "" and title not in missingIsins.keys():
@@ -186,7 +189,7 @@ with open("myTransactions.csv", "w") as f:
             else:
                 shares = "{0:.4f}".format(sell / amountPerShare)
             f.write(
-                "{0};{1};{2};{3};{4};{5};{6};{7}\n".format(
+                "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
                     date,
                     "Verkauf" if LOCALE == "de" else "Sell",
                     shares,
@@ -195,6 +198,7 @@ with open("myTransactions.csv", "w") as f:
                     "1.0",
                     isin,
                     title,
+                    CURRENCY,
                 )
             )
             if isin == "" and title not in missingIsins.keys():
