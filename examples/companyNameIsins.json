@@ -1,4 +1,20 @@
 {
+    "Physical Gold": "IE00B4ND3602",
+
+    "Moderna": "US60770K1079",
+
+    "BioNTech (ADR)": "US09075V1026",
+    "Daimler": "DE0007100000",
+    "Daimler Truck Holding AG": "DE000DTR0CK8",
+    "Eintragung Aktienregister": "",
+    "Facebook": "US30303M1027",
+    "Teladoc Health": "US87918A1051",
+    "USD Treasury Bond 7-10y USD (Dist)": "IE00B1FZS798",
+
+
+    "Palantir Technologies": "US69608A1088",
+    "US Treasury Bond 1-3y EUR (Acc)": "IE00BDFK1573",
+
     "Realty Income Corporation":"US7561091049",
     "British American Tobacco":"GB0002875804",
     "Core MSCI World":"IE00B4L5Y983",
@@ -36,5 +52,35 @@
     "Unilever": "GB00B10RZP78",
     "Royal Dutch Shell (A)": "GB00BP6MXD84",
     "Gazprom (ADR)": "US3682872078",
-    "Gazprom": "US3682872078"
+    "Gazprom": "US3682872078",
+
+
+    "Amazon": "US0231351067",
+    "Apple": "US0378331005",
+    "Coinbase": "US19260Q1076",
+    "DAX EUR (Acc)": "LU0274211480",
+
+    "Gold Producers USD (Acc)": "IE00B6R52036",
+    "Hive Blockchain": "CA43366H1001",
+    "Hive Blockchain Technologies": "CA43366H1001",
+    "Infineon": "DE0006231004",
+    "Microsoft": "US5949181045",
+    "NVIDIA": "US67066G1040",
+    
+    "S&P 500 EUR (Acc)": "LU1681048804",
+    
+    "S&P 500 Information Tech USD (Acc)": "IE00B3WJKG14",
+    "S&P 500 Information Technology Sector": "IE00B3WJKG14",
+    "iShares S&P 500 Information Tech USD (Acc)": "IE00B3WJKG14",
+
+    "Tesla": "US88160R1014",
+    "Walmart": "US9311421039",
+    
+    "Gold": "DE000A0KRJZ9",
+    "WisdomTree Gold USD ": "DE000A0KRJZ9",
+
+    "Physical Gold USD ": "DE000A0N62G0",
+    "WisdomTree Physical Gold USD ": "DE000A0N62G0",
+
+    "Always Add Above":              "NotARealOne0"
 }

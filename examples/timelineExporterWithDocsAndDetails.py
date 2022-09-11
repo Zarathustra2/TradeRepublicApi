@@ -1,4 +1,4 @@
-####################################################################################################################
+#################################################################################################################
 # PREREQUISITES:
 #     0. environment_template.py to environment.py and fill the correct data
 #     1. MUST HAVE PYTHON 3 installed
@@ -12,16 +12,18 @@
 #     INFO 1:
 #       When used for the very first time ypu will be asked for a 4-digit code that is sent to you with and SMS.
 #       Giving this 4-digit code will disconnect your mobile app and connect/pair this set of Python scripts
-#       to your Trade republic account. To reconnect back to your mobile app (or any other istallation) you
+#       to your Trade republic account. To reconnect back to your mobile app (or any other installation) you
 #       must pair the device again.
 #     INFO 2:
 #       Output files will reside in folders configured in envConsts.py file
-####################################################################################################################
+#################################################################################################################
 
 import sys
 sys.path.append("../")
 sys.path.append("trapi/")
+sys.path.append("../trapi/")
 sys.path.append("example/")
+
 from api import TrBlockingApi
 from api import TRapiExcServerErrorState
 from environment import *
@@ -43,7 +45,7 @@ class TRunner:
         self.after = ""
         self.dataEvDetails = []
         self.iCounter: int = 0
-        self.iCounterEntries: int = 0
+        # self.iCounterEntries: int = 0
         self.dataEvDetails = []
         self.bRepeat: bool = False
         self.tr = TrBlockingApi(NUMBER, PIN, locale="de")
@@ -63,7 +65,8 @@ class TRunner:
             print("\tINFO: File ""{0}"" renamed to ""{1}""".format(sFileName, sNewFileName))
         except Exception as e:
             print(e)
-            print("\tWARNING: Old output file cannot be saved ""{0}"" renamed to ""{1}""".format(sFileName, sNewFileName))
+            print("\tWARNING: Old output file cannot be saved ""{0}"" renamed to ""{1}""".format(sFileName,
+                                                                                                 sNewFileName))
         return None
 
     @staticmethod
@@ -88,7 +91,8 @@ class TRunner:
                             sTitle = d_docLine["title"]
                         except Exception:
                             pass
-                        # makesure that this is legal for a file name char even though international chars are accepted by all OSes now
+                        # makesure that this is legal for a file name char even though international chars are
+                        # accepted by all OSes now
                         sTitle = sTitle.lower()
                         sTitle = sTitle.replace("ö", "oe").replace("ü", "ue").replace("ä", "ae").replace("\n", "_")
 
@@ -97,16 +101,17 @@ class TRunner:
                             sDateZ = d_docLine["detail"]
                         except Exception:
                             pass
-                        # makesure that this is leagal for a file name char
+                        # makesure that this is legal for a file name char
                         sDateZ = sDateZ.replace(".", "-").replace("/", "-").replace("\\", "-").replace(":", "-")
 
                         if d_docLine["action"]["type"] == "browserModal":
                             sActionCommand = d_docLine["action"]["payload"]
 
-                            sFileNameFound = ""
-                            sPart1 = ""
+                            # sFileNameFound = ""
+                            # sPart1 = ""
                             iPlace = sActionCommand.find(".pdf")
                             if iPlace != -1:
+                                # sSubfolderName = ""
                                 try:
                                     sFileNameFound = sActionCommand
                                     # remove the final ".pdf and replace chars that will be used later"
@@ -138,27 +143,47 @@ class TRunner:
                                         sFileNameFound = sFileNameFound.replace("-", "", 1)  # delete the "-"
 
                                     sPart1 = sFileNameFound[:8]
+                                    sSubfolderName = sPart1[:6]
                                     sFileNameFound = sFileNameFound[10 + 8:]
-                                except Exception:
+                                except Exception as e:
                                     print("***************** ERROR WHEN PARSING ***************")
+                                    print(e)
+                                    print("Ignoring download command{0}".format(sActionCommand))
+                                    continue
+                                else:
+                                    sFileNameFound = sFileNameFound.replace(" ", "-")   # remove all spaces
+                                    sFileNameFound = sFileNameFound.replace("\n", "_")  # in linux there can be new
+                                                                                        # line in the name of the file
 
-                                sFileNameFound = sFileNameFound.replace(" ", "-")  # remove all spaces
-                                sFileNameBase = S_DOCDOWNLOADS_PATH + sPart1 + "_" + sTitlePrefix + "_" + sFileNameFound
-                                if sTitle != "":
-                                    sTitle = sTitle.replace("  ", "-").replace(" ", "-").replace(",", "")
-                                    sFileNameBase += "_" + sTitle
-                                if sDateZ != "":
-                                    sDateZ = sDateZ.replace("  ", "-").replace(" ", "-").replace(",", "")
-                                    sFileNameBase += "_" + sDateZ
+                                    if sSubfolderName == "" or not sSubfolderName[0].isdigit()                    \
+                                            or not sSubfolderName[1].isdigit()                                    \
+                                            or not sSubfolderName[2].isdigit() or not sSubfolderName[3].isdigit() \
+                                            or not sSubfolderName[4].isdigit() or not sSubfolderName[5].isdigit():
+                                        sSubfolderName = S_DOCDOWNLOADS_PATH + "_misc"
+                                    else:
+                                        sSubfolderName = S_DOCDOWNLOADS_PATH + sSubfolderName
 
-                                sFileNameBase = sFileNameBase.replace("\n", "_")
+                                    if not os.path.isdir(sSubfolderName):
+                                        os.makedirs(sSubfolderName)
 
-                                sFileName = sFileNameBase + ".pdf"
-                                sFileNameTx = sFileNameBase + ".txt"
-                                if not os.path.isfile(sFileName):
-                                    ra = requests.get(sActionCommand, allow_redirects=True)
-                                    open(sFileName, 'wb').write(ra.content)
-                                    open(sFileNameTx, 'w', encoding='utf-8').writelines(sActionCommand)
+                                    sSubfolderName = sSubfolderName + os.sep
+                                    sTitlePrefix2 = sTitlePrefix.replace("\n", "_").replace("\r", "_")
+                                    sFileNameBase = sSubfolderName + sPart1 + "_" + sTitlePrefix2 + "_" + sFileNameFound
+
+                                    if sTitle != "":
+                                        sTitle = sTitle.replace("  ", "-").replace(" ", "-").replace(",", "")
+                                        sFileNameBase += "_" + sTitle
+                                    if sDateZ != "":
+                                        sDateZ = sDateZ.replace("  ", "-").replace(" ", "-").replace(",", "")
+                                        sFileNameBase += "_" + sDateZ
+
+                                    sFileName = sFileNameBase + ".pdf"
+                                    # sFileNameTx = sFileNameBase + ".txt"
+                                    if not os.path.isfile(sFileName):
+                                        # print("downloading file {0}".format(sFileName))
+                                        ra = requests.get(sActionCommand, allow_redirects=True)
+                                        open(sFileName, 'wb').write(ra.content)
+                                        # open(sFileNameTx, 'w', encoding='utf-8').writelines(sActionCommand)
                             else:
                                 print("Warning: ***************** IGNORING NON PDF DOCUMENTS?! ***************")
         except Exception as exError:
@@ -178,27 +203,37 @@ class TRunner:
 
                 self.iCounter += 1
                 print("No. {0} **************".format(self.iCounter))
+                # sTheEntryType = ""
 
                 for d in res["data"]:
                     self.data.append(d)
 
                     # s = json.dumps(d, indent="\t")
-                    self.iCounterEntries += 1
+                    # self.iCounterEntries += 1
                     guidEv = d["data"]["id"]
+                    sTheEntryType = d["type"]
                     # print(guidEv)
                     # print("**>ENTRY No.{0} ****** {1}".format(iCounterEntries, guidEv))
-
+                    guidEv2 = ""
+                    oAction = None
                     try:
                         try:
-                            oAction = d["data"]["action"]  # if here we throw an exception then it is as expected
+                            if sTheEntryType == "timelineAccountBalance":
+                                guidEv2 = guidEv
+                            else:
+                                oAction = d["data"]["action"]  # if here we threw an exception then it is expected
                         except KeyError:
                             pass
                         except Exception:
                             pass
                         else:
-                            guidEv2 = oAction["payload"]
-                            sType = oAction["type"]
-                            if sType == "timelineDetail":
+                            if guidEv2 == "":
+                                guidEv2 = oAction["payload"]
+                                sType = oAction["type"]
+                            else:
+                                sType = sTheEntryType
+
+                            if sType == "timelineDetail" or sType == "timelineAccountBalance":
                                 assert (guidEv2 == guidEv)
                                 d2 = self.tr.hist_event(guidEv2)
                                 if d2 is not None:
@@ -209,21 +244,22 @@ class TRunner:
                             else:
                                 print("WARNING: new type of action {0}".format(sType))
                     except TRapiExcServerErrorState as eExx:
-                        if TRunner.iRemainingRetries == 0:
+                        TRunner.iRemainingRetries -= 1
+                        print("\t**** remaining retries {0}".format(TRunner.iRemainingRetries))
+                        if TRunner.iRemainingRetries <= 0:
                             print(" ****  ")
                             raise eExx
                         self.bRepeat = True
-                        TRunner.iRemainingRetries -= 1
-                        print("****will retry")
+                        print("\t****will retry")
                         print(eExx)
                     if self.bRepeat:
                         break
-                # end  of for
+                    # end  of for
 
                 if self.bRepeat:
                     sTemp = "\t*** Starting over - remaining Retries {0}\n\tup to {1} will go faster"
                     print(sTemp.format(TRunner.iRemainingRetries, self.iCounter))
-                    time.sleep(5)
+                    time.sleep(15)
                     self.InitMe()
                 else:
                     tmp = res["cursors"]
@@ -232,7 +268,7 @@ class TRunner:
                         time.sleep(1)
                     except KeyError:
                         bCursorFinished = True
-                #while loop
+                # while loop
 
         except Exception as ExErr:
             # print(ExErr)
@@ -251,6 +287,7 @@ class TRunner:
                 print("\tSUCCESS: Details for Events JSON File written{0}\n".format(S_TIMELN_JSNFILE_PATH))
 
             print(" DONE: ************   finished EXPORTING!  ************ ")
+
 
 r = TRunner()
 r.Run()
