@@ -52,10 +52,16 @@ class TRApi:
                 json={"phoneNumber": self.number, "pin": self.pin},
             )
 
-            # TODO: Error handling
+            bFailed = False
+            try:
+                processId = r.json()["processId"]
+            except KeyError:
+                bFailed = True
 
-            processId = r.json()["processId"]
-            print(f"The process id is: {processId}")
+            if bFailed:
+                raise Exception(f"Cannot Login! Details: {r.text}")
+            else:
+                print(f"*** The process id is: {processId}")
 
         pubkey = base64.b64encode(
             self.signing_key.get_verifying_key().to_string("uncompressed")
