@@ -1,3 +1,20 @@
+## Addendum to Export _Trade Republic_ Timeline as Excel(csv) 
+
+This section only explains a specific use-case, which has been tested in the examples folder. 
+
+**The rest of the readme is intentionally not modified.**
+
+### Steps to use
+
+Important note: This use case is tested on Linux, python 3.8 and 
+with German Language only.
+
+ - Update the ```./examples/envConsts.py``` file with appropriate path(s).
+ - copy ```environment_template.py``` to ```environment.py``` and change it to match your TR account.
+ - See the ```StartMe.sh``` linux command-line script for how it is used further.
+
+---
+
 ## Trade Republic API
 
 This is an unofficial API for the German broker Trade Republic.
