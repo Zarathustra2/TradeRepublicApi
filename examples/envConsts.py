@@ -1,8 +1,8 @@
 ##############################################################################################
 # Modify these Constants to change the file names and paths
 ##############################################################################################
-S_OUTPUT_DIR     = "./_storedOutputs/"
-S_DOC_DOWNLOADS  = "./_docDownloads/"
+S_OUTPUT_DIR = "./_storedOutputs/"
+S_DOC_DOWNLOADS = "./_docDownloads/"
 S_TIMELN_JSNFILE = "myTimeline.json"
 S_TRANSA_CSVFILE = "myTransactions.csv"
 S_TIMELD_JSNFILE = "myTimelineDetails.json"
