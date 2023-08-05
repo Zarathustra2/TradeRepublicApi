@@ -175,7 +175,17 @@ class TRApi:
     # todo addToWatchlist
 
     async def stock_history(self, isin, range="max", resolution=604800000, callback=print):
-        """aggregateHistoryLight request"""
+        """aggregateHistoryLight request
+
+        Gets a stock's history
+
+        No login required
+
+        :param isin: the stock's isin
+        :param range: the range to display ("1d", "5d", "1m", "3m", "1y", "max")
+        :param resolution: the resolution in milliseconds; the default is 7 days
+        :param callback: callback function
+        """
         l = ["1d", "5d", "1m", "3m", "1y", "max"]
         if range not in l:
             raise TRapiException(f"Range of time must be either one of {l}")
@@ -203,21 +213,54 @@ class TRApi:
             "cancelOrder",
             payload={"type": "cancelOrder", "orderId": id},
             callback=callback,
-            key=f"cancelOrder {id}",
+            key=f"cancelOrder {id}"
         )
 
     # todo cancelPriceAlarm
-    # todo  cancelSavingsPlan
+
+    async def cancel_savings_plan(self, id, callback=print):
+        """cancelSavingsPlan request"""
+        await self.sub(
+            "cancelSavingsPlan",
+            payload={"type": "cancelSavingsPlan", "id": id},
+            callback=callback,
+            key=f"cancelSavingsPlan {id}"
+        )
 
     async def cash(self, callback=print):
-        """cash request
-        requires login"""
+        """cash request"""
         await self.sub("cash", callback)
 
     # todo changeOrder
-    # todo changeSavingsPlan
+
+    async def change_savings_plan(self, id, isin, amount, startDate, interval, warnings_shown,
+                                  callback=print):  # todo what is warningsshown?
+        """changeSavingsPlan request"""
+
+        params = {"instrumentId": isin,
+                  "amount": amount,
+                  "startDate": startDate,
+                  "interval": interval
+                  }
+
+        return await self.sub(
+            "changeSavingsPlan",
+            payload={
+                "type": "createSavingsPlan",
+                "id": id,
+                "parameters": params,
+                "warningsShown": warnings_shown,
+            },
+            callback=callback,
+            key=f"changeSavingsPlan {id}"
+        )
+
     # todo collection
-    # todo compactPortfolio
+
+    async def compact_portfolio(self, callback=print):
+        """compactPortfolio request"""
+        await self.sub("compactPortfolio", callback)
+
     # todo  confirmOrder
 
     async def create_price_alarm(self, isin, target_price, callback=print):
@@ -233,13 +276,43 @@ class TRApi:
             key=f"createPriceAlarm {isin} {target_price}",
         )
 
-    # todo  createSavingsPlan
+    async def create_savings_plan(self, isin, amount, startDate, interval, warnings_shown,
+                                  callback=print):  # todo what is warningsshown?
+        """createSavingsPlan request"""
+
+        params = {"instrumentId": isin,
+                  "amount": amount,
+                  "startDate": startDate,
+                  "interval": interval
+                  }
+
+        return await self.sub(
+            "createSavingsPlan",
+            payload={
+                "type": "createSavingsPlan",
+                "parameters": params,
+                "warningsShown": warnings_shown,
+            },
+            callback=callback,
+            key=f"createSavingsPlan {params} {warnings_shown}"  # todo?
+        )
+
     # todo cryptoDetails
     # todo etfComposition
     # todo etfDetails
     # todo  followWatchlist
-    # todo  frontendExperiment
-    async def derivativ_details(self, isin, callback=print):
+
+    async def frontend_experiment(self, operation, experimentId, identifier, callback=print):
+        """frontendExperiment request"""
+        return await self.sub(
+            "frontendExperiment",
+            payload={"type": "frontendExperiment", "operation": operation, "experimentId": experimentId,
+                     "identifier": identifier},
+            callback=callback,
+            key=f"frontendExperiment {operation} {experimentId} {identifier}",
+        )
+
+    async def instrument_details(self, isin, callback=print):
         """instrument request"""
         return await self.sub(
             "instrument",
@@ -250,16 +323,60 @@ class TRApi:
 
     # todo instrumentExchange
     # todo homeInstrumentExchange
-    # todo instrumentSuitability
+    async def instrument_suitability(self, instrument_id, callback=print):
+        """instrumentSuitability request"""
+        return await self.sub(
+            "instrumentSuitability",
+            payload={"type": "instrumentSuitability", "instrumentId": instrument_id},
+            callback=callback,
+            key=f"instrumentSuitability {instrument_id}",
+        )
+
     # todo investableWatchlist
     # todo messageOfTheDay
     # todo  namedWatchlist
     # todo  neonCards
     # todo derivatives
-    # todo neonSearch
-    # todo  neonSearchAggregations
-    # todo  neonSearchSuggestedTags
-    # todo neonSearchTags
+
+    async def neon_search(self, q="", page=1, pageSize=1, instrument_type="stock", jurisdiction="DE", callback=print):
+        """neonSearch request
+
+        todo: fix, produces timeout"""
+
+        instrument_list = ["stock", "fund", "derivative", "crypto"]
+        if instrument_type not in instrument_list:
+            raise TRapiException(f"type must be either one of {instrument_list}")
+
+        jurisdiction_list = ["AT", "DE", "ES", "FR", "IT", "NL", "BE", "EE", "FI", "IE", "GR", "LU", "LT",
+                             "LV", "PT", "SI", "SK"]
+        if jurisdiction not in jurisdiction_list:
+            raise TRapiException(f"Jurisdiction must be either one of {jurisdiction_list}")
+
+        filter = ([{"key": "type", "value": instrument_type}],
+                  [{"key": "jurisdiction", "value": jurisdiction}],
+                  # [{"key": "relativePerformance", "value": "VAL"}]  # todo: are there more filters?
+                  )
+        data = {"q": q,  # todo: find out what that does, in index.*.js it was most times empty string
+                "page": page,
+                "pageSize": pageSize,
+                "filter": filter}
+        await self.sub(
+            "neonSearch",
+            callback=callback,
+            payload={"type": "neonSearch", "data": data},
+            key=f"neonSearch {q} {page} {pageSize} {filter}",
+        )
+
+    # todo  neonSearchAggregations {type: N.NeonSearchAggregations, data: e}
+    # todo  neonSearchSuggestedTags {type: Q.NeonSearchSuggestedTags, data: {q: t}
+
+    async def neon_search_tags(self, callback=print):
+        """neonSearchTags request
+
+        :return: available search tags
+
+        No login required"""
+        await self.sub("neonSearchTags", callback)
 
     async def news(self, isin, callback=print):
         await self.sub(
@@ -273,6 +390,7 @@ class TRApi:
 
     async def all_orders(self, callback=print):
         """orders request"""
+        # todo terminated param
         return await self.sub("orders", callback=callback)
 
     # todo  performance
@@ -545,6 +663,11 @@ class TrBlockingApi(TRApi):
 
     def cash(self):
         return asyncio.get_event_loop().run_until_complete(self.get_one(super().cash()))
+
+    def ticker(self, isin):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().ticker(isin))
+        )
 
     def hist(self, after=None):
         return asyncio.get_event_loop().run_until_complete(
