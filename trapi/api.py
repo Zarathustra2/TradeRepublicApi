@@ -11,15 +11,17 @@ import os
 
 import json
 
+
 class TRapiException(Exception):
     pass
+
 
 class TRapiExcServerErrorState(TRapiException):
     pass
 
+
 class TRapiExcServerUnknownState(TRapiException):
     pass
-
 
 
 class TRApi:
@@ -94,8 +96,8 @@ class TRApi:
 
         # The user is currently signed in with a different device
         if res == None or (
-            res.status_code == 401
-            and not kwargs.get("already_tried_registering", False)
+                res.status_code == 401
+                and not kwargs.get("already_tried_registering", False)
         ):
             self.register_new_device()
             res = self.login(already_tried_registering=True)
@@ -121,7 +123,7 @@ class TRApi:
             response = await self.ws.recv()
 
             if not response == "connected":
-                raise  TRapiException(f"Connection Error: {response}") # ValueError(f"Connection Error: {response}")
+                raise TRapiException(f"Connection Error: {response}")  # ValueError(f"Connection Error: {response}")
 
         payload = kwargs.get("payload", {"type": payload_key})
         payload["token"] = self.sessionToken
@@ -431,19 +433,20 @@ class TRApi:
                 continue
             elif state == "E":
                 sErr = f"ERROR state: {state} data: {data}"
-                #print(sErr)
-                if receive_one: #cleanup
+                # print(sErr)
+                if receive_one:  # cleanup
                     self.started = False
                     self.callbacks = {}
                     self.latest_response = {}
-                    #return None
-                raise TRapiExcServerErrorState(f"Error during server access\n\tServer-side Object probably expired...\n\t{sErr}")
-                #continue
+                    # return None
+                raise TRapiExcServerErrorState(
+                    f"Error during server access\n\tServer-side Object probably expired...\n\t{sErr}")
+                # continue
             else:
                 sErr = f"ERROR UNKNOWN state: {state} data: {data}"
                 print(sErr)
                 raise TRapiExcServerUnknownState(f"Error during server access\n\t{sErr}")
-                #continue
+                # continue
 
             if isinstance(data, list):
                 data = " ".join(data)
@@ -518,7 +521,7 @@ class TRApi:
 
             if instruction == "=":
                 num = int(rst)
-                rsp += latest[cur : (cur + num)]
+                rsp += latest[cur: (cur + num)]
                 cur += num
             elif instruction == "-":
                 cur += int(rst)
@@ -545,7 +548,7 @@ class TrBlockingApi(TRApi):
             return res
         except Exception as e:
             raise e
-            #return None
+            # return None
 
     def cash(self):
         return asyncio.get_event_loop().run_until_complete(self.get_one(super().cash()))
