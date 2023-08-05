@@ -166,27 +166,99 @@ class TRApi:
     async def get_data(self):
         return await self.ws.recv()
 
+    # -----------------------------------------------------------
+
+    # todo accruedInterestTermsRequired
+    # todo addToWatchlist
+    # todo aggregateHistoryLight
+
+    async def stock_history(self, isin, range="max", callback=print):
+        """aggregateHistory request
+        todo request might not exist"""
+        l = ["1d", "5d", "1m", "3m", "1y", "max"]
+        if range not in l:
+            raise TRapiException(f"Range of time must be either one of {l}")
+
+        return await self.sub(
+            "aggregateHistory",
+            payload={"type": "aggregateHistory", "range": range, "id": f"{isin}.LSX"},
+            callback=callback,
+            key=f"aggregateHistory {isin} {range}",
+        )
+
+    async def available_cash(self, callback=print):
+        """availableCash request"""
+        await self.sub("availableCash", callback)
+
+    async def available_cash_for_payout(self, callback=print):
+        """availableCashForPayout request"""
+        await self.sub("availableCashForPayout", callback)
+
+    # todo availableSize
+
+    async def order_cancel(self, id, callback=print):
+        """cancelOrder request"""
+        return await self.sub(
+            "cancelOrder",
+            payload={"type": "cancelOrder", "orderId": id},
+            callback=callback,
+            key=f"cancelOrder {id}",
+        )
+
+    # todo cancelPriceAlarm
+    # todo  cancelSavingsPlan
+
     async def cash(self, callback=print):
+        """cash request
+        requires login"""
         await self.sub("cash", callback)
 
-    async def portfolio(self, callback=print):
-        await self.sub("portfolio", callback)
+    # todo changeOrder
+    # todo changeSavingsPlan
+    # todo collection
+    # todo compactPortfolio
+    # todo  confirmOrder
 
-    async def ticker(self, isin, callback=print):
-        await self.sub(
-            "ticker",
+    async def create_price_alarm(self, isin, target_price, callback=print):
+        """createPriceAlarm request"""
+        return await self.sub(
+            "createPriceAlarm",
+            payload={
+                "type": "createPriceAlarm",
+                "instrumentId": isin,
+                "targetPrice": target_price,
+            },
             callback=callback,
-            payload={"type": "ticker", "id": f"{isin}.LSX"},
-            key=f"ticker {isin}",
+            key=f"createPriceAlarm {isin} {target_price}",
         )
 
-    async def stock_details(self, isin, callback=print):
-        await self.sub(
-            "stockDetails",
+    # todo  createSavingsPlan
+    # todo cryptoDetails
+    # todo etfComposition
+    # todo etfDetails
+    # todo  followWatchlist
+    # todo  frontendExperiment
+    async def derivativ_details(self, isin, callback=print):
+        """instrument request"""
+        return await self.sub(
+            "instrument",
+            payload={"type": "instrument", "id": isin},
             callback=callback,
-            payload={"type": "stockDetails", "id": isin},
-            key=f"stockDetails {isin}",
+            key=f"instrument {isin}",
         )
+
+    # todo instrumentExchange
+    # todo homeInstrumentExchange
+    # todo instrumentSuitability
+    # todo investableWatchlist
+    # todo messageOfTheDay
+    # todo  namedWatchlist
+    # todo  neonCards
+    # todo derivatives
+    # todo neonSearch
+    # todo  neonSearchAggregations
+    # todo  neonSearchSuggestedTags
+    # todo neonSearchTags
 
     async def news(self, isin, callback=print):
         await self.sub(
@@ -196,18 +268,26 @@ class TRApi:
             key=f"news {isin}",
         )
 
-    async def available_cash(self, callback=print):
-        await self.sub("availableCash", callback)
+    # todo newsSubscriptions
 
-    async def derivativ_details(self, isin, callback=print):
-        return await self.sub(
-            "instrument",
-            payload={"type": "instrument", "id": isin},
-            callback=callback,
-            key=f"instrument {isin}",
-        )
+
+#todo: is there a difference between the functions?
+    async def curr_orders(self, callback=print):
+        """orders request"""
+        return await self.sub("orders", callback)
+
+
+    async def all_orders(self, callback=print):
+        return await self.sub("orders", callback=callback)
+
+    # todo  performance
+
+    async def portfolio(self, callback=print):
+        """portfolio"""
+        await self.sub("portfolio", callback)
 
     async def port_hist(self, range="max", callback=print):
+        """portfolioAggregateHistory request"""
         l = ["1d", "5d", "1m", "3m", "1y", "max"]
         if range not in l:
             raise TRapiException(f"Range of time must be either one of {l}")
@@ -218,48 +298,30 @@ class TRApi:
             key=f"portfolioAggregateHistory {range}",
         )
 
-    async def curr_orders(self, callback=print):
-        return await self.sub("orders", callback)
+    # todo portfolioAggregateHistoryLight
+    # todo portfolioStatus
+    async def price_alarms(self, callback=print):
+        """priceAlarms request"""
+        return await self.sub("priceAlarms", callback)
 
-    async def hist(self, after=None, callback=print):
-        return await self.sub(
-            "timeline",
-            payload={"type": "timeline", "after": after},
-            callback=callback,
-            key=f"timeline {after}",
-        )
-
-    async def hist_event(self, id, callback=print):
-        return await self.sub(
-            "timelineDetail",
-            payload={"type": "timelineDetail", "id": id},
-            callback=callback,
-            key=f"timelineDetail {id}",
-        )
-
-    async def all_orders(self, callback=print):
-        return await self.sub("orders", callback=callback)
-
-    async def order_cancel(self, id, callback=print):
-        return await self.sub(
-            "cancelOrder",
-            payload={"type": "cancelOrder", "orderId": id},
-            callback=callback,
-            key=f"cancelOrder {id}",
-        )
+    # todo priceForOrder
+    # todo removeFromWatchlist
+    # todo savingsPlanParameters
+    # todo  savingsPlans
+    # todo  settings
 
     async def limit_order(
-        self,
-        order_id,
-        isin,
-        order_type,
-        size,
-        limit,
-        expiry,
-        exchange="LSX",
-        callback=print,
+            self,
+            order_id,
+            isin,
+            order_type,
+            size,
+            limit,
+            expiry,
+            exchange="LSX",
+            callback=print,
     ):
-
+        """simpleCreateOrder request"""
         if expiry not in ["gfd", "gtd", "gtc"]:
             raise TRapiException(f"Expiry should be one of gfd, gtd, gtc, was {expiry}")
 
@@ -291,32 +353,55 @@ class TRApi:
             key=f"simpleCreateOrder {order_id}",
         )
 
-    async def price_alarms(self, callback=print):
-        return await self.sub("priceAlarms", callback)
+    # todo stockDetailDividends
+    # todo stockDetailKpis
 
-    async def create_price_alarm(self, isin, target_price, callback=print):
-        return await self.sub(
-            "createPriceAlarm",
-            payload={
-                "type": "createPriceAlarm",
-                "instrumentId": isin,
-                "targetPrice": target_price,
-            },
+    async def stock_details(self, isin, callback=print):
+        """stockDetails request"""
+        await self.sub(
+            "stockDetails",
             callback=callback,
-            key=f"createPriceAlarm {isin} {target_price}",
+            payload={"type": "stockDetails", "id": isin},
+            key=f"stockDetails {isin}",
         )
 
-    async def stock_history(self, isin, range="max", callback=print):
-        l = ["1d", "5d", "1m", "3m", "1y", "max"]
-        if range not in l:
-            raise TRapiException(f"Range of time must be either one of {l}")
+    # todo subscribeNews
 
-        return await self.sub(
-            "aggregateHistory",
-            payload={"type": "aggregateHistory", "range": range, "id": f"{isin}.LSX"},
+    async def ticker(self, isin, callback=print):
+        """ticker request"""
+        await self.sub(
+            "ticker",
             callback=callback,
-            key=f"aggregateHistory {isin} {range}",
+            payload={"type": "ticker", "id": f"{isin}.LSX"},
+            key=f"ticker {isin}",
         )
+
+    async def hist(self, after=None, callback=print):
+        """timeline request"""
+        return await self.sub(
+            "timeline",
+            payload={"type": "timeline", "after": after},
+            callback=callback,
+            key=f"timeline {after}",
+        )
+
+    # todo timelineActions
+    async def hist_event(self, id, callback=print):
+        """timelineDetail request"""
+        return await self.sub(
+            "timelineDetail",
+            payload={"type": "timelineDetail", "id": id},
+            callback=callback,
+            key=f"timelineDetail {id}",
+        )
+
+    #  todo tradingPerkConditionStatus
+    #  todo unfollowWatchlist
+    #  todo unsubscribeNews
+    #  todo watchlist
+    #  todo watchlists
+
+    # -----------------------------------------------------------
 
     async def start(self, receive_one=False):
         async with self.mu:
