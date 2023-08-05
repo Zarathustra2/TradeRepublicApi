@@ -168,22 +168,21 @@ class TRApi:
     async def get_data(self):
         return await self.ws.recv()
 
+    # todo alternativ LSX oder LUS
     # -----------------------------------------------------------
 
     # todo accruedInterestTermsRequired
     # todo addToWatchlist
-    # todo aggregateHistoryLight
 
-    async def stock_history(self, isin, range="max", callback=print):
-        """aggregateHistory request
-        todo request might not exist"""
+    async def stock_history(self, isin, range="max", resolution=604800000, callback=print):
+        """aggregateHistoryLight request"""
         l = ["1d", "5d", "1m", "3m", "1y", "max"]
         if range not in l:
             raise TRapiException(f"Range of time must be either one of {l}")
 
         return await self.sub(
-            "aggregateHistory",
-            payload={"type": "aggregateHistory", "range": range, "id": f"{isin}.LSX"},
+            "aggregateHistoryLight",
+            payload={"type": "aggregateHistoryLight", "range": range, "id": f"{isin}.LSX", "resolution": resolution},
             callback=callback,
             key=f"aggregateHistory {isin} {range}",
         )
@@ -272,14 +271,8 @@ class TRApi:
 
     # todo newsSubscriptions
 
-
-#todo: is there a difference between the functions?
-    async def curr_orders(self, callback=print):
-        """orders request"""
-        return await self.sub("orders", callback)
-
-
     async def all_orders(self, callback=print):
+        """orders request"""
         return await self.sub("orders", callback=callback)
 
     # todo  performance
@@ -583,9 +576,9 @@ class TrBlockingApi(TRApi):
             self.get_one(super().stock_details(isin))
         )
 
-    def stock_history(self, isin, range="max"):
+    def stock_history(self, isin, range="max", resolution=604800000):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().stock_history(isin, range=range))
+            self.get_one(super().stock_history(isin, range=range, resolution=resolution))
         )
 
     def hist_event(self, id):
