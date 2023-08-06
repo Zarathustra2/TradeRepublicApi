@@ -339,7 +339,8 @@ class TRApi:
     # todo  neonCards
     # todo derivatives
 
-    async def neon_search(self, query="", page=1, page_size=20, instrument_type="stock", jurisdiction="DE", callback=print):
+    async def neon_search(self, query="", page=1, page_size=20, instrument_type="stock", jurisdiction="DE",
+                          callback=print):
         """neonSearch request
 
         No login required
@@ -712,8 +713,50 @@ class TrBlockingApi(TRApi):
             raise e
             # return None
 
+    # -----------------------------------------------------------
+
+    def stock_history(self, isin, range="max", resolution=604800000):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().stock_history(isin, range=range, resolution=resolution))
+        )
+
+    def available_cash(self):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().available_cash())
+        )
+
     def cash(self):
         return asyncio.get_event_loop().run_until_complete(self.get_one(super().cash()))
+
+    def instrument_details(self, isin):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().instrument_details(isin))
+        )
+
+    def news(self, isin):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().news(isin))
+        )
+
+    def all_orders(self):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().all_orders())
+        )
+
+    def portfolio(self):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().portfolio())
+        )
+
+    def port_hist(self, range="max"):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().port_hist(range=range))
+        )
+
+    def stock_details(self, isin):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().stock_details(isin))
+        )
 
     def ticker(self, isin):
         return asyncio.get_event_loop().run_until_complete(
@@ -725,50 +768,7 @@ class TrBlockingApi(TRApi):
             self.get_one(super().hist(after=after))
         )
 
-    def news(self, isin):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().news(isin))
-        )
-
-    def curr_orders(self):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().curr_orders())
-        )
-
-    def port_hist(self, range="max"):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().port_hist(range=range))
-        )
-
-    def derivativ_details(self, isin):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().derivativ_details(isin))
-        )
-
-    def stock_details(self, isin):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().stock_details(isin))
-        )
-
-    def stock_history(self, isin, range="max", resolution=604800000):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().stock_history(isin, range=range, resolution=resolution))
-        )
-
     def hist_event(self, id):
         return asyncio.get_event_loop().run_until_complete(
             self.get_one(super().hist_event(id=id))
-        )
-
-    def portfolio(self):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().portfolio())
-        )
-
-    def cash(self):
-        return asyncio.get_event_loop().run_until_complete(self.get_one(super().cash()))
-
-    def available_cash(self):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().available_cash())
         )
