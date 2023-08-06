@@ -168,9 +168,16 @@ class TRApi:
     async def get_data(self):
         return await self.ws.recv()
 
-    # todo alternativ LSX oder LUS
-    # https://github.com/J05HI/pytr
+    # list of requests: https://github.com/J05HI/pytr
     # -----------------------------------------------------------
+
+    exchange_list = ["LSX"]  # todo: add all available exchanges
+    range_list = ["1d", "5d", "1m", "3m", "1y", "max"]
+    instrument_list = ["stock", "fund", "derivative", "crypto"]
+    jurisdiction_list = ["AT", "DE", "ES", "FR", "IT", "NL", "BE", "EE", "FI", "IE", "GR", "LU", "LT",
+                         "LV", "PT", "SI", "SK"]
+    expiry_list = ["gfd", "gtd", "gtc"]
+    order_type_list = ["buy", "sell"]
 
     # todo accruedInterestTermsRequired
     # todo addToWatchlist
@@ -187,13 +194,15 @@ class TRApi:
         :param resolution: the resolution in milliseconds; the default is 7 days
         :param callback: callback function
         """
-        l = ["1d", "5d", "1m", "3m", "1y", "max"]
-        if range not in l:
-            raise TRapiException(f"Range of time must be either one of {l}")
+        if range not in self.range_list:
+            raise TRapiException(f"Range of time must be either one of {self.range_list}")
 
         return await self.sub(
             "aggregateHistoryLight",
-            payload={"type": "aggregateHistoryLight", "range": range, "id": f"{isin}.LSX", "resolution": resolution},
+            payload={"type": "aggregateHistoryLight",
+                     "range": range,
+                     "id": f"{isin}.LSX",
+                     "resolution": resolution},
             callback=callback,
             key=f"aggregateHistory {isin} {range}",
         )
@@ -347,14 +356,11 @@ class TRApi:
 
         :return: list of instruments"""
 
-        instrument_list = ["stock", "fund", "derivative", "crypto"]
-        if instrument_type not in instrument_list:
-            raise TRapiException(f"type must be either one of {instrument_list}")
+        if instrument_type not in self.instrument_list:
+            raise TRapiException(f"type must be either one of {self.instrument_list}")
 
-        jurisdiction_list = ["AT", "DE", "ES", "FR", "IT", "NL", "BE", "EE", "FI", "IE", "GR", "LU", "LT",
-                             "LV", "PT", "SI", "SK"]
-        if jurisdiction not in jurisdiction_list:
-            raise TRapiException(f"Jurisdiction must be either one of {jurisdiction_list}")
+        if jurisdiction not in self.jurisdiction_list:
+            raise TRapiException(f"Jurisdiction must be either one of {self.jurisdiction_list}")
 
         filter = [{"key": "type", "value": instrument_type},
                   {"key": "jurisdiction", "value": jurisdiction},
@@ -379,14 +385,11 @@ class TRApi:
 
         :return: list of categories of instruments and number of instruments per category"""
 
-        instrument_list = ["stock", "fund", "derivative", "crypto"]
-        if instrument_type not in instrument_list:
-            raise TRapiException(f"type must be either one of {instrument_list}")
+        if instrument_type not in self.instrument_list:
+            raise TRapiException(f"type must be either one of {self.instrument_list}")
 
-        jurisdiction_list = ["AT", "DE", "ES", "FR", "IT", "NL", "BE", "EE", "FI", "IE", "GR", "LU", "LT",
-                             "LV", "PT", "SI", "SK"]
-        if jurisdiction not in jurisdiction_list:
-            raise TRapiException(f"Jurisdiction must be either one of {jurisdiction_list}")
+        if jurisdiction not in self.jurisdiction_list:
+            raise TRapiException(f"Jurisdiction must be either one of {self.jurisdiction_list}")
 
         filter = [{"key": "type", "value": instrument_type},
                   {"key": "jurisdiction", "value": jurisdiction},
@@ -453,9 +456,8 @@ class TRApi:
 
     async def port_hist(self, range="max", callback=print):
         """portfolioAggregateHistory request"""
-        l = ["1d", "5d", "1m", "3m", "1y", "max"]
-        if range not in l:
-            raise TRapiException(f"Range of time must be either one of {l}")
+        if range not in self.range_list:
+            raise TRapiException(f"Range of time must be either one of {self.range_list}")
         return await self.sub(
             "portfolioAggregateHistory",
             payload={"type": "portfolioAggregateHistory", "range": range},
@@ -487,13 +489,16 @@ class TRApi:
             callback=print,
     ):
         """simpleCreateOrder request"""
-        if expiry not in ["gfd", "gtd", "gtc"]:
-            raise TRapiException(f"Expiry should be one of gfd, gtd, gtc, was {expiry}")
+        if expiry not in self.expiry_list:
+            raise TRapiException(f"Expiry must be either of {self.expiry_list}")
 
-        if order_type not in ["buy", "sell"]:
+        if order_type not in self.order_type_list:
             raise TRapiException(
-                f"order_Type should be either buy or sell, was: {order_type}"
+                f"order_Type must be either of {self.order_type_list}"
             )
+
+        if exchange not in self.exchange_list:
+            raise TRapiException(f"exchange must be either one of {self.exchange_list}")
 
         payload = {
             "type": "simpleCreateOrder",
@@ -532,13 +537,17 @@ class TRApi:
 
     # todo subscribeNews
 
-    async def ticker(self, isin, callback=print):
+    async def ticker(self, isin, exchange="LSX", callback=print):
         """ticker request"""
+
+        if exchange not in self.exchange_list:
+            raise TRapiException(f"exchange must be either one of {self.exchange_list}")
+
         await self.sub(
             "ticker",
             callback=callback,
-            payload={"type": "ticker", "id": f"{isin}.LSX"},
-            key=f"ticker {isin}",
+            payload={"type": "ticker", "id": f"{isin}.{exchange}"},
+            key=f"ticker {isin} {exchange}",
         )
 
     async def hist(self, after=None, callback=print):
@@ -733,6 +742,13 @@ class TrBlockingApi(TRApi):
             self.get_one(super().instrument_details(isin))
         )
 
+    def neon_search(self, query="", page=1, page_size=20, instrument_type="stock", jurisdiction="DE", ):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(
+                super().neon_search(query=query, page=page, page_size=page_size, instrument_type=instrument_type,
+                                    jurisdiction=jurisdiction))
+        )
+
     def news(self, isin):
         return asyncio.get_event_loop().run_until_complete(
             self.get_one(super().news(isin))
@@ -758,9 +774,9 @@ class TrBlockingApi(TRApi):
             self.get_one(super().stock_details(isin))
         )
 
-    def ticker(self, isin):
+    def ticker(self, isin, exchange="LSX"):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().ticker(isin))
+            self.get_one(super().ticker(isin, exchange))
         )
 
     def hist(self, after=None):

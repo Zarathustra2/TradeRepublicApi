@@ -61,7 +61,7 @@ async def main():
     await tr.portfolio()
 
     isin = "US62914V1061"
-    await tr.derivativ_details(isin)
+    await tr.instrument_details(isin)
     await tr.stock_details(isin)
     await tr.ticker(isin, callback=process)
     await tr.news(isin) 
