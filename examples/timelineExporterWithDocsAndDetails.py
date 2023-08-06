@@ -198,7 +198,7 @@ class TRunner:
             TRunner.iRemainingRetries = 5
             bCursorFinished = False
             while not bCursorFinished:
-                res = self.tr.hist(after=self.after)
+                res = self.tr.timeline(after=self.after)
                 self.bRepeat = False
 
                 self.iCounter += 1
@@ -235,7 +235,7 @@ class TRunner:
 
                             if sType == "timelineDetail" or sType == "timelineAccountBalance":
                                 assert (guidEv2 == guidEv)
-                                d2 = self.tr.hist_event(guidEv2)
+                                d2 = self.tr.timeline_detail(guidEv2)
                                 if d2 is not None:
                                     d2Pack = d2
                                     self.dataEvDetails.append(d2Pack)

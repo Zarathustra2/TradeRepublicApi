@@ -182,7 +182,7 @@ class TRApi:
     # todo accruedInterestTermsRequired
     # todo addToWatchlist
 
-    async def stock_history(self, isin, range="max", resolution=604800000, callback=print):
+    async def aggregate_history_light(self, isin, range="max", resolution=604800000, callback=print):
         """aggregateHistoryLight request
 
         Gets a stock's history
@@ -217,7 +217,7 @@ class TRApi:
 
     # todo availableSize
 
-    async def order_cancel(self, id, callback=print):
+    async def cancel_order(self, id, callback=print):
         """cancelOrder request"""
         return await self.sub(
             "cancelOrder",
@@ -322,7 +322,7 @@ class TRApi:
             key=f"frontendExperiment {operation} {experimentId} {identifier}",
         )
 
-    async def instrument_details(self, isin, callback=print):
+    async def instrument(self, isin, callback=print):
         """instrument request"""
         return await self.sub(
             "instrument",
@@ -427,7 +427,7 @@ class TRApi:
         """
         await self.sub("neonSearchTags", callback)
 
-    async def news(self, isin, callback=print):
+    async def neon_news(self, isin, callback=print):
         """neonNews request
 
         No login required
@@ -443,7 +443,7 @@ class TRApi:
 
     # todo newsSubscriptions
 
-    async def all_orders(self, callback=print):
+    async def orders(self, callback=print):
         """orders request"""
         # todo terminated param boolean parameter, find out default
         return await self.sub("orders", callback=callback)
@@ -454,7 +454,7 @@ class TRApi:
         """portfolio"""
         await self.sub("portfolio", callback)
 
-    async def port_hist(self, range="max", callback=print):
+    async def portfolio_aggregate_history(self, range="max", callback=print):
         """portfolioAggregateHistory request"""
         if range not in self.range_list:
             raise TRapiException(f"Range of time must be either one of {self.range_list}")
@@ -477,7 +477,7 @@ class TRApi:
     # todo  savingsPlans
     # todo  settings
 
-    async def limit_order(
+    async def simple_create_order(
             self,
             order_id,
             isin,
@@ -550,7 +550,7 @@ class TRApi:
             key=f"ticker {isin} {exchange}",
         )
 
-    async def hist(self, after=None, callback=print):
+    async def timeline(self, after=None, callback=print):
         """timeline request"""
         return await self.sub(
             "timeline",
@@ -560,7 +560,7 @@ class TRApi:
         )
 
     # todo timelineActions
-    async def hist_event(self, id, callback=print):
+    async def timeline_detail(self, id, callback=print):
         """timelineDetail request"""
         return await self.sub(
             "timelineDetail",
@@ -724,9 +724,9 @@ class TrBlockingApi(TRApi):
 
     # -----------------------------------------------------------
 
-    def stock_history(self, isin, range="max", resolution=604800000):
+    def aggregate_history_light(self, isin, range="max", resolution=604800000):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().stock_history(isin, range=range, resolution=resolution))
+            self.get_one(super().aggregate_history_light(isin, range=range, resolution=resolution))
         )
 
     def available_cash(self):
@@ -737,9 +737,9 @@ class TrBlockingApi(TRApi):
     def cash(self):
         return asyncio.get_event_loop().run_until_complete(self.get_one(super().cash()))
 
-    def instrument_details(self, isin):
+    def instrument(self, isin):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().instrument_details(isin))
+            self.get_one(super().instrument(isin))
         )
 
     def neon_search(self, query="", page=1, page_size=20, instrument_type="stock", jurisdiction="DE", ):
@@ -749,14 +749,14 @@ class TrBlockingApi(TRApi):
                                     jurisdiction=jurisdiction))
         )
 
-    def news(self, isin):
+    def neon_news(self, isin):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().news(isin))
+            self.get_one(super().neon_news(isin))
         )
 
-    def all_orders(self):
+    def orders(self):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().all_orders())
+            self.get_one(super().orders())
         )
 
     def portfolio(self):
@@ -764,9 +764,9 @@ class TrBlockingApi(TRApi):
             self.get_one(super().portfolio())
         )
 
-    def port_hist(self, range="max"):
+    def portfolio_aggregate_history(self, range="max"):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().port_hist(range=range))
+            self.get_one(super().portfolio_aggregate_history(range=range))
         )
 
     def stock_details(self, isin):
@@ -779,12 +779,12 @@ class TrBlockingApi(TRApi):
             self.get_one(super().ticker(isin, exchange))
         )
 
-    def hist(self, after=None):
+    def timeline(self, after=None):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().hist(after=after))
+            self.get_one(super().timeline(after=after))
         )
 
-    def hist_event(self, id):
+    def timeline_detail(self, id):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().hist_event(id=id))
+            self.get_one(super().timeline_detail(id=id))
         )
