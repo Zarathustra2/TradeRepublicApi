@@ -338,7 +338,7 @@ class TRApi:
     # todo  neonCards
     # todo derivatives
 
-    async def neon_search(self, q="", page=1, pageSize=1, instrument_type="stock", jurisdiction="DE", callback=print):
+    async def neon_search(self, q="", page=1, page_size=1, instrument_type="stock", jurisdiction="DE", callback=print):
         """neonSearch request
 
         todo: fix, produces timeout"""
@@ -358,27 +358,75 @@ class TRApi:
                   )
         data = {"q": q,  # todo: find out what that does, in index.*.js it was most times empty string
                 "page": page,
-                "pageSize": pageSize,
+                "pageSize": page_size,
                 "filter": filter}
         await self.sub(
             "neonSearch",
             callback=callback,
             payload={"type": "neonSearch", "data": data},
-            key=f"neonSearch {q} {page} {pageSize} {filter}",
+            key=f"neonSearch {q} {page} {page_size} {filter}",
         )
 
     # todo  neonSearchAggregations {type: N.NeonSearchAggregations, data: e}
-    # todo  neonSearchSuggestedTags {type: Q.NeonSearchSuggestedTags, data: {q: t}
+
+    async def neon_search_aggregations(self, q="", page=1, page_size=1, instrument_type="stock", jurisdiction="DE",
+                                       callback=print):
+        """neonSearchAggregations request
+
+        todo: fix, produces timeout"""
+
+        instrument_list = ["stock", "fund", "derivative", "crypto"]
+        if instrument_type not in instrument_list:
+            raise TRapiException(f"type must be either one of {instrument_list}")
+
+        jurisdiction_list = ["AT", "DE", "ES", "FR", "IT", "NL", "BE", "EE", "FI", "IE", "GR", "LU", "LT",
+                             "LV", "PT", "SI", "SK"]
+        if jurisdiction not in jurisdiction_list:
+            raise TRapiException(f"Jurisdiction must be either one of {jurisdiction_list}")
+
+        filter = ([{"key": "type", "value": instrument_type}],
+                  [{"key": "jurisdiction", "value": jurisdiction}],
+                  # [{"key": "relativePerformance", "value": "VAL"}]  # todo: are there more filters?
+                  )
+        data = {"q": q,  # todo: find out what that does, in index.*.js it was most times empty string
+                "page": page,
+                "pageSize": page_size,
+                "filter": filter}
+        await self.sub(
+            "neonSearchAggregations",
+            callback=callback,
+            payload={"type": "neonSearchAggregations", "data": data},
+            key=f"neonSearchAggregations {q} {page} {page_size} {filter}",
+        )
+
+    async def neon_search_suggested_tags(self, q="", callback=print):
+        """neonSearchSuggestedTags request"""
+
+        data = {"q": q,  # todo: find out what that does, in index.*.js it was most times empty string
+                }
+        await self.sub(
+            "neonSearchSuggestedTags",
+            callback=callback,
+            payload={"type": "neonSearchSuggestedTags", "data": data},
+            key=f"neonSearchSuggestedTags {q}",
+        )
 
     async def neon_search_tags(self, callback=print):
         """neonSearchTags request
 
-        :return: available search tags
+        No login required
 
-        No login required"""
+        :return: available search tags
+        """
         await self.sub("neonSearchTags", callback)
 
     async def news(self, isin, callback=print):
+        """neonNews request
+
+        No login required
+
+        :return: news articles about the company
+        """
         await self.sub(
             "neonNews",
             callback=callback,
@@ -390,7 +438,7 @@ class TRApi:
 
     async def all_orders(self, callback=print):
         """orders request"""
-        # todo terminated param
+        # todo terminated param boolean parameter, find out default
         return await self.sub("orders", callback=callback)
 
     # todo  performance
