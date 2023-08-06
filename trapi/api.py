@@ -169,6 +169,7 @@ class TRApi:
         return await self.ws.recv()
 
     # todo alternativ LSX oder LUS
+    # https://github.com/J05HI/pytr
     # -----------------------------------------------------------
 
     # todo accruedInterestTermsRequired
@@ -338,10 +339,12 @@ class TRApi:
     # todo  neonCards
     # todo derivatives
 
-    async def neon_search(self, q="", page=1, page_size=1, instrument_type="stock", jurisdiction="DE", callback=print):
+    async def neon_search(self, query="", page=1, page_size=20, instrument_type="stock", jurisdiction="DE", callback=print):
         """neonSearch request
 
-        todo: fix, produces timeout"""
+        No login required
+
+        :return: list of instruments"""
 
         instrument_list = ["stock", "fund", "derivative", "crypto"]
         if instrument_type not in instrument_list:
@@ -352,11 +355,11 @@ class TRApi:
         if jurisdiction not in jurisdiction_list:
             raise TRapiException(f"Jurisdiction must be either one of {jurisdiction_list}")
 
-        filter = ([{"key": "type", "value": instrument_type}],
-                  [{"key": "jurisdiction", "value": jurisdiction}],
+        filter = [{"key": "type", "value": instrument_type},
+                  {"key": "jurisdiction", "value": jurisdiction},
                   # [{"key": "relativePerformance", "value": "VAL"}]  # todo: are there more filters?
-                  )
-        data = {"q": q,  # todo: find out what that does, in index.*.js it was most times empty string
+                  ]
+        data = {"q": query,
                 "page": page,
                 "pageSize": page_size,
                 "filter": filter}
@@ -364,16 +367,16 @@ class TRApi:
             "neonSearch",
             callback=callback,
             payload={"type": "neonSearch", "data": data},
-            key=f"neonSearch {q} {page} {page_size} {filter}",
+            key=f"neonSearch {query} {page} {page_size} {filter}",
         )
 
-    # todo  neonSearchAggregations {type: N.NeonSearchAggregations, data: e}
-
-    async def neon_search_aggregations(self, q="", page=1, page_size=1, instrument_type="stock", jurisdiction="DE",
+    async def neon_search_aggregations(self, query="", page=1, page_size=20, instrument_type="stock", jurisdiction="DE",
                                        callback=print):
         """neonSearchAggregations request
 
-        todo: fix, produces timeout"""
+        No login required
+
+        :return: list of categories of instruments and number of instruments per category"""
 
         instrument_list = ["stock", "fund", "derivative", "crypto"]
         if instrument_type not in instrument_list:
@@ -384,11 +387,11 @@ class TRApi:
         if jurisdiction not in jurisdiction_list:
             raise TRapiException(f"Jurisdiction must be either one of {jurisdiction_list}")
 
-        filter = ([{"key": "type", "value": instrument_type}],
-                  [{"key": "jurisdiction", "value": jurisdiction}],
+        filter = [{"key": "type", "value": instrument_type},
+                  {"key": "jurisdiction", "value": jurisdiction},
                   # [{"key": "relativePerformance", "value": "VAL"}]  # todo: are there more filters?
-                  )
-        data = {"q": q,  # todo: find out what that does, in index.*.js it was most times empty string
+                  ]
+        data = {"q": query,
                 "page": page,
                 "pageSize": page_size,
                 "filter": filter}
@@ -396,19 +399,19 @@ class TRApi:
             "neonSearchAggregations",
             callback=callback,
             payload={"type": "neonSearchAggregations", "data": data},
-            key=f"neonSearchAggregations {q} {page} {page_size} {filter}",
+            key=f"neonSearchAggregations {query} {page} {page_size} {filter}",
         )
 
-    async def neon_search_suggested_tags(self, q="", callback=print):
+    async def neon_search_suggested_tags(self, query="", callback=print):
         """neonSearchSuggestedTags request"""
 
-        data = {"q": q,  # todo: find out what that does, in index.*.js it was most times empty string
+        data = {"q": query,
                 }
         await self.sub(
             "neonSearchSuggestedTags",
             callback=callback,
             payload={"type": "neonSearchSuggestedTags", "data": data},
-            key=f"neonSearchSuggestedTags {q}",
+            key=f"neonSearchSuggestedTags {query}",
         )
 
     async def neon_search_tags(self, callback=print):
