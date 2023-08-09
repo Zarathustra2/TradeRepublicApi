@@ -171,7 +171,7 @@ class TRApi:
     # list of requests: https://github.com/J05HI/pytr
     # -----------------------------------------------------------
 
-    exchange_list = ["LSX"]  # todo: add all available exchanges
+    exchange_list = ["LSX", "TDG", "LUS", "TUB", "BHS", "B2C"]
     range_list = ["1d", "5d", "1m", "3m", "1y", "max"]
     instrument_list = ["stock", "fund", "derivative", "crypto"]
     jurisdiction_list = ["AT", "DE", "ES", "FR", "IT", "NL", "BE", "EE", "FI", "IE", "GR", "LU", "LT",
@@ -180,31 +180,42 @@ class TRApi:
     order_type_list = ["buy", "sell"]
 
     # todo accruedInterestTermsRequired
-    # todo addToWatchlist
 
-    async def aggregate_history_light(self, isin, range="max", resolution=604800000, callback=print):
+    async def add_to_watchlist(self, id, callback=print):
+        """addToWatchlist request"""
+        return await self.sub(
+            "addToWatchlist",
+            payload={"type": "addToWatchlist", "instrumentId": id},
+            callback=callback,
+            key=f"addToWatchlist {id}"
+        )
+
+    async def aggregate_history_light(self, isin, range="max", resolution=604800000, exchange="LSX", callback=print):
         """aggregateHistoryLight request
-
-        Gets a stock's history
 
         No login required
 
         :param isin: the stock's isin
         :param range: the range to display ("1d", "5d", "1m", "3m", "1y", "max")
         :param resolution: the resolution in milliseconds; the default is 7 days
+        :param exchange: the exchange the instrument is traded at
         :param callback: callback function
+        :return: stock history
         """
         if range not in self.range_list:
             raise TRapiException(f"Range of time must be either one of {self.range_list}")
+
+        if exchange not in self.exchange_list:
+            raise TRapiException(f"exchange must be either one of {self.exchange_list}")
 
         return await self.sub(
             "aggregateHistoryLight",
             payload={"type": "aggregateHistoryLight",
                      "range": range,
-                     "id": f"{isin}.LSX",
+                     "id": f"{isin}.{exchange}",
                      "resolution": resolution},
             callback=callback,
-            key=f"aggregateHistory {isin} {range}",
+            key=f"aggregateHistoryLight {isin} {exchange} {range}",
         )
 
     async def available_cash(self, callback=print):
@@ -304,7 +315,7 @@ class TRApi:
                 "warningsShown": warnings_shown,
             },
             callback=callback,
-            key=f"createSavingsPlan {params} {warnings_shown}"  # todo?
+            key=f"createSavingsPlan {params} {warnings_shown}"
         )
 
     # todo cryptoDetails
@@ -322,17 +333,43 @@ class TRApi:
             key=f"frontendExperiment {operation} {experimentId} {identifier}",
         )
 
-    async def instrument(self, isin, callback=print):
-        """instrument request"""
+    async def instrument(self, id, callback=print):
+        """instrument request
+
+        No login required
+
+        todo: why is dividend information always null?
+
+        :param id: instrument's id
+        :param callback: callback function
+        :return: information about the instrument
+        """
         return await self.sub(
             "instrument",
-            payload={"type": "instrument", "id": isin},
+            payload={"type": "instrument", "id": id},
             callback=callback,
-            key=f"instrument {isin}",
+            key=f"instrument {id}",
         )
 
-    # todo instrumentExchange
-    # todo homeInstrumentExchange
+    # todo: there is a parameter needed, probably the exchange?
+    async def instrument_exchange(self, instrument_id, callback=print):
+        """instrumentExchange request"""
+        return await self.sub(
+            "instrumentExchange",
+            payload={"type": "instrumentExchange", "instrumentId": instrument_id},
+            callback=callback,
+            key=f"instrumentExchange {instrument_id}",
+        )
+
+    async def home_instrument_exchange(self, instrument_id, callback=print):
+        """homeInstrumentExchange request"""
+        return await self.sub(
+            "homeInstrumentExchange",
+            payload={"type": "homeInstrumentExchange", "instrumentId": instrument_id},
+            callback=callback,
+            key=f"homeInstrumentExchange {instrument_id}",
+        )
+
     async def instrument_suitability(self, instrument_id, callback=print):
         """instrumentSuitability request"""
         return await self.sub(
@@ -343,17 +380,31 @@ class TRApi:
         )
 
     # todo investableWatchlist
-    # todo messageOfTheDay
+    async def message_of_the_day(self, callback=print):
+        """messageOfTheDay request"""
+        await self.sub("messageOfTheDay", callback)
+
     # todo  namedWatchlist
-    # todo  neonCards
-    # todo derivatives
+    async def neon_cards(self, callback=print):
+        """neonCards request"""
+        await self.sub("neonCards", callback)
+
+    async def derivatives(self, isin, product_category, callback=print):
+        # todo: create list for product_category
+        """derivatives request"""
+        return await self.sub(
+            "derivatives",
+            payload={"type": "derivatives", "underlying": isin, "productCategory": product_category},
+            callback=callback,
+            key=f"derivatives {isin}",
+        )
 
     async def neon_search(self, query="", page=1, page_size=20, instrument_type="stock", jurisdiction="DE",
                           callback=print):
         """neonSearch request
 
         No login required
-
+#todo params
         :return: list of instruments"""
 
         if instrument_type not in self.instrument_list:
@@ -438,15 +489,18 @@ class TRApi:
             "neonNews",
             callback=callback,
             payload={"type": "neonNews", "isin": isin},
-            key=f"news {isin}",
+            key=f"news {isin}"
         )
 
     # todo newsSubscriptions
 
-    async def orders(self, callback=print):
+    async def orders(self, terminated=False, callback=print):
         """orders request"""
-        # todo terminated param boolean parameter, find out default
-        return await self.sub("orders", callback=callback)
+        return await self.sub(
+            "orders",
+            callback=callback,
+            payload={"type": "orders", "terminated": terminated},
+            key=f"orders {terminated}")
 
     # todo  performance
 
@@ -466,13 +520,23 @@ class TRApi:
         )
 
     # todo portfolioAggregateHistoryLight
-    # todo portfolioStatus
+    async def portfolio_status(self, callback=print):
+        """portfolioStatus request"""
+        return await self.sub("portfolioStatus", callback)
+
     async def price_alarms(self, callback=print):
         """priceAlarms request"""
         return await self.sub("priceAlarms", callback)
 
     # todo priceForOrder
-    # todo removeFromWatchlist
+    async def remove_from_watchlist(self, instrument_id, callback=print):
+        """removeFromWatchlist request"""
+        return await self.sub(
+            "orders",
+            callback=callback,
+            payload={"type": "removeFromWatchlist", "instrumentId": instrument_id},
+            key=f"removeFromWatchlist {instrument_id}")
+
     # todo savingsPlanParameters
     # todo  savingsPlans
     # todo  settings
@@ -531,7 +595,7 @@ class TRApi:
         await self.sub(
             "stockDetails",
             callback=callback,
-            payload={"type": "stockDetails", "id": isin},
+            payload={"type": "stockDetails", "id": isin},  # todo: variable jurisdiction , "jurisdiction": "DE"
             key=f"stockDetails {isin}",
         )
 
@@ -559,7 +623,10 @@ class TRApi:
             key=f"timeline {after}",
         )
 
-    # todo timelineActions
+    async def timeline_actions(self, callback=print):
+        """timelineActions request"""
+        return await self.sub("timelineActions", callback)
+
     async def timeline_detail(self, id, callback=print):
         """timelineDetail request"""
         return await self.sub(
@@ -572,7 +639,10 @@ class TRApi:
     #  todo tradingPerkConditionStatus
     #  todo unfollowWatchlist
     #  todo unsubscribeNews
-    #  todo watchlist
+    async def watchlist(self, callback=print):
+        """watchlist request"""
+        return await self.sub("watchlist", callback)
+
     #  todo watchlists
 
     # -----------------------------------------------------------
@@ -724,9 +794,9 @@ class TrBlockingApi(TRApi):
 
     # -----------------------------------------------------------
 
-    def aggregate_history_light(self, isin, range="max", resolution=604800000):
+    def aggregate_history_light(self, isin, range="max", resolution=604800000, exchange="LSX"):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().aggregate_history_light(isin, range=range, resolution=resolution))
+            self.get_one(super().aggregate_history_light(isin, range=range, resolution=resolution, exchange=exchange))
         )
 
     def available_cash(self):
@@ -734,12 +804,17 @@ class TrBlockingApi(TRApi):
             self.get_one(super().available_cash())
         )
 
+    def available_cash_for_payout(self):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().available_cash_for_payout())
+        )
+
     def cash(self):
         return asyncio.get_event_loop().run_until_complete(self.get_one(super().cash()))
 
-    def instrument(self, isin):
+    def instrument(self, id):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().instrument(isin))
+            self.get_one(super().instrument(id))
         )
 
     def neon_search(self, query="", page=1, page_size=20, instrument_type="stock", jurisdiction="DE", ):
