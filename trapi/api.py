@@ -338,7 +338,7 @@ class TRApi:
 
         No login required
 
-        todo: why is dividend information always null?
+        Gets basic information about the instrument. For more information, use stock_details, crypto_details and etf_details.
 
         :param id: instrument's id
         :param callback: callback function
@@ -587,15 +587,50 @@ class TRApi:
             key=f"simpleCreateOrder {order_id}",
         )
 
-    # todo stockDetailDividends
-    # todo stockDetailKpis
+    async def stock_detail_dividends(self, isin, callback=print):
+        """stockDetailDividends request
+
+        Login required!
+
+        :param: isin: the stock's isin
+        :return: complete list of stock's past dividends
+        """
+        await self.sub(
+            "stockDetailDividends",
+            callback=callback,
+            payload={"type": "stockDetailDividends", "id": isin},  # todo: variable jurisdiction , "jurisdiction": "DE"?
+            key=f"stockDetailDividends {isin}",
+        )
+
+    async def stock_detail_kpis(self, isin, callback=print):
+        """stockDetailKpis request
+
+        Login required!
+
+        :param: isin: the stock's isin
+        :return: list of stock's past kpis per year
+        """
+        await self.sub(
+            "stockDetailKpis",
+            callback=callback,
+            payload={"type": "stockDetailKpis", "id": isin},  # todo: variable jurisdiction , "jurisdiction": "DE"?
+            key=f"stockDetailKpis {isin}",
+        )
 
     async def stock_details(self, isin, callback=print):
-        """stockDetails request"""
+        """stockDetails request
+
+        Login required!
+
+        Gets detailed summary about stock. For more information you might need to use stock_detail_dividends or stock_detail_kpis
+
+        :param: isin: the stock's isin
+        :return: more detailed information about stock than instrument request
+        """
         await self.sub(
             "stockDetails",
             callback=callback,
-            payload={"type": "stockDetails", "id": isin},  # todo: variable jurisdiction , "jurisdiction": "DE"
+            payload={"type": "stockDetails", "id": isin},  # todo: variable jurisdiction , "jurisdiction": "DE"?
             key=f"stockDetails {isin}",
         )
 
@@ -842,6 +877,16 @@ class TrBlockingApi(TRApi):
     def portfolio_aggregate_history(self, range="max"):
         return asyncio.get_event_loop().run_until_complete(
             self.get_one(super().portfolio_aggregate_history(range=range))
+        )
+
+    def stock_detail_dividends(self, isin):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().stock_detail_dividends(isin))
+        )
+
+    def stock_detail_kpis(self, isin):
+        return asyncio.get_event_loop().run_until_complete(
+            self.get_one(super().stock_detail_kpis(isin))
         )
 
     def stock_details(self, isin):
