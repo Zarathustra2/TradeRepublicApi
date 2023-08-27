@@ -6,6 +6,7 @@ import time
 import requests
 import asyncio
 import websockets
+from deprecated import deprecated
 
 import os
 
@@ -681,6 +682,60 @@ class TRApi:
     #  todo watchlists
 
     # -----------------------------------------------------------
+    # old names of functions
+
+    @deprecated(reason="Use function neon_news")
+    async def news(self, isin, callback=print):
+        await self.neon_news(isin, callback=callback)
+
+    @deprecated(reason="Use function instrument")
+    async def derivativ_details(self, isin, callback=print):
+        await self.instrument(isin, callback=callback)
+
+    @deprecated(reason="Use function portfolio_aggregate_history")
+    async def port_hist(self, range="max", callback=print):
+        await self.portfolio_aggregate_history(range=range, callback=callback)
+
+    @deprecated(reason="Use function orders")
+    async def curr_orders(self, callback=print):
+        await self.orders(callback=callback)
+
+    @deprecated(reason="Use function timeline")
+    async def hist(self, after=None, callback=print):
+        await self.timeline(after=after, callback=callback)
+
+    @deprecated(reason="Use function timeline_detail")
+    async def hist_event(self, id, callback=print):
+        await self.timeline_detail(id, callback=callback)
+
+    @deprecated(reason="Use function orders")
+    async def all_orders(self, callback=print):
+        await self.orders(callback=callback)
+
+    @deprecated(reason="Use function cancel_order")
+    async def order_cancel(self, id, callback=print):
+        await self.cancel_order(id, callback=callback)
+
+    @deprecated(reason="Use function simple_create_order")
+    async def limit_order(
+            self,
+            order_id,
+            isin,
+            order_type,
+            size,
+            limit,
+            expiry,
+            exchange="LSX",
+            callback=print,
+    ):
+        await self.simple_create_order(order_id, isin, order_type, size, limit, expiry, exchange=exchange,
+                                       callback=callback)
+
+    @deprecated(reason="Use function aggregate_history_light")
+    async def stock_history(self, isin, range="max", callback=print):
+        await self.aggregate_history_light(isin, range=range, callback=callback)
+
+    # -----------------------------------------------------------
 
     async def start(self, receive_one=False):
         async with self.mu:
@@ -908,3 +963,34 @@ class TrBlockingApi(TRApi):
         return asyncio.get_event_loop().run_until_complete(
             self.get_one(super().timeline_detail(id=id))
         )
+
+    # -----------------------------------------------------------
+    # old names of functions
+
+    @deprecated(reason="Use function timeline")
+    def hist(self, after=None):
+        return self.timeline(after=after)
+
+    @deprecated(reason="Use function neon_news")
+    def news(self, isin):
+        return self.neon_news(isin)
+
+    @deprecated(reason="Use function orders")
+    def curr_orders(self):
+        self.orders()
+
+    @deprecated(reason="Use function portfolio_aggregate_history")
+    def port_hist(self, range="max"):
+        return self.portfolio_aggregate_history(range=range)
+
+    @deprecated(reason="Use function instrument")
+    def derivativ_details(self, isin):
+        return self.instrument(isin)
+
+    @deprecated(reason="Use function aggregate_history_light")
+    def stock_history(self, isin, range="max"):
+        return self.aggregate_history_light(isin, range=range)
+
+    @deprecated(reason="Use function neon_news")
+    def hist_event(self, id):
+        return self.timeline_detail(id)
