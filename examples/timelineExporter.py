@@ -16,7 +16,7 @@ after = ""
 
 try:
     while True:
-        res = tr.hist(after=after)
+        res = tr.timeline(after=after)
         print(res)
         for d in res["data"]:
             data.append(d)

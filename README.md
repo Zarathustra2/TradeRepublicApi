@@ -38,10 +38,10 @@ def main():
     tr = TrBlockingApi(NUMBER, PIN)
     tr.login()
 
-    res = tr.hist()
+    res = tr.timeline()
     print(res.keys())
     for x in res["data"]:
-        print(tr.hist_event(x["data"]["id"]))
+        print(tr.timeline_detail(x["data"]["id"]))
 ```
 
 
@@ -61,10 +61,10 @@ async def main():
     await tr.portfolio()
 
     isin = "US62914V1061"
-    await tr.derivativ_details(isin)
+    await tr.instrument(isin)
     await tr.stock_details(isin)
     await tr.ticker(isin, callback=process)
-    await tr.news(isin) 
+    await tr.neon_news(isin) 
     
     await tr.start()
 
