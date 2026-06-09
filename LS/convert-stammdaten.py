@@ -1,6 +1,6 @@
 import json
 
-with open("./stammdaten.json", "r") as f:
+with open("./stammdaten.json") as f:
     data = json.loads(f.read())
 
 stocks = []
@@ -24,4 +24,4 @@ for d in data:
 with open("./isins.json", "w") as f:
     json.dump(stocks, f)
 
-print("Converted {0} stocks".format(counter))
+print(f"Converted {counter} stocks")

@@ -19,20 +19,19 @@
 #################################################################################################################
 
 import sys
-sys.path.append("../")
-sys.path.append("trapi/")
-sys.path.append("../trapi/")
-sys.path.append("example/")
 
-from api import TrBlockingApi
-from api import TRapiExcServerErrorState
-from environment import *
-from envConsts import *
+sys.path.append("../")
+
 import json
-import time
 import os
+import time
 import uuid
+
 import requests  # to download documents
+from envConsts import *
+from environment import *
+
+from trapi.api import TRapiExcServerErrorState, TrBlockingApi
 
 RUN_GUID = str(uuid.uuid4())
 
@@ -56,17 +55,18 @@ class TRunner:
 
     @staticmethod
     def SaveOldOutput(sFolderPath: str, sFName: str, riid: str, sNewExt: str) -> None:
-        sBkpDir = "{0}_bckp/".format(sFolderPath)
-        sNewFileName = "{0}{1}.{2}.{3}".format(sBkpDir, sFName, riid, sNewExt)
+        sBkpDir = f"{sFolderPath}_bckp/"
+        sNewFileName = f"{sBkpDir}{sFName}.{riid}.{sNewExt}"
         sFileName = sFolderPath + sFName
         try:  # rename old files to store them just in case
             os.makedirs(sBkpDir, exist_ok=True)
             os.rename(sFileName, sNewFileName)
-            print("\tINFO: File ""{0}"" renamed to ""{1}""".format(sFileName, sNewFileName))
+            print(f"\tINFO: File {sFileName} renamed to {sNewFileName}")
         except Exception as e:
             print(e)
-            print("\tWARNING: Old output file cannot be saved ""{0}"" renamed to ""{1}""".format(sFileName,
-                                                                                                 sNewFileName))
+            print(
+                f"\tWARNING: Old output file cannot be saved {sFileName} renamed to {sNewFileName}"
+            )
         return None
 
     @staticmethod
@@ -74,7 +74,9 @@ class TRunner:
         sRecommendPrefix: str = ""
         try:
             titleText = d2["titleText"]
-            sRecommendPrefix = titleText.replace(" ", "").replace("-", "_").replace("/", "").replace(".", "_")
+            sRecommendPrefix = (
+                titleText.replace(" ", "").replace("-", "_").replace("/", "").replace(".", "_")
+            )
             sRecommendPrefix = sRecommendPrefix.replace("(", "").replace(")", "").replace("&", "")
         except Exception:
             pass
@@ -94,7 +96,12 @@ class TRunner:
                         # makesure that this is legal for a file name char even though international chars are
                         # accepted by all OSes now
                         sTitle = sTitle.lower()
-                        sTitle = sTitle.replace("ö", "oe").replace("ü", "ue").replace("ä", "ae").replace("\n", "_")
+                        sTitle = (
+                            sTitle.replace("ö", "oe")
+                            .replace("ü", "ue")
+                            .replace("ä", "ae")
+                            .replace("\n", "_")
+                        )
 
                         sDateZ = ""
                         try:
@@ -102,7 +109,12 @@ class TRunner:
                         except Exception:
                             pass
                         # makesure that this is legal for a file name char
-                        sDateZ = sDateZ.replace(".", "-").replace("/", "-").replace("\\", "-").replace(":", "-")
+                        sDateZ = (
+                            sDateZ.replace(".", "-")
+                            .replace("/", "-")
+                            .replace("\\", "-")
+                            .replace(":", "-")
+                        )
 
                         if d_docLine["action"]["type"] == "browserModal":
                             sActionCommand = d_docLine["action"]["payload"]
@@ -115,7 +127,9 @@ class TRunner:
                                 try:
                                     sFileNameFound = sActionCommand
                                     # remove the final ".pdf and replace chars that will be used later"
-                                    sFileNameFound = sFileNameFound[(iPlace - (47 + 4)): iPlace].replace("-", "")
+                                    sFileNameFound = sFileNameFound[
+                                        (iPlace - (47 + 4)) : iPlace
+                                    ].replace("-", "")
                                     sFileNameFound = sFileNameFound.replace(" ", "")
 
                                     # trailing
@@ -129,36 +143,56 @@ class TRunner:
                                     else:
                                         pass
 
-                                    sFileNameFound = sFileNameFound.replace("\\", "-").replace("/", "-").replace(".",
-                                                                                                                 "-")
+                                    sFileNameFound = (
+                                        sFileNameFound.replace("\\", "-")
+                                        .replace("/", "-")
+                                        .replace(".", "-")
+                                    )
 
-                                    if not (sFileNameFound[5].isdigit() and sFileNameFound[6].isdigit()):
+                                    if not (
+                                        sFileNameFound[5].isdigit() and sFileNameFound[6].isdigit()
+                                    ):
                                         sFileNameFound = sFileNameFound.replace("-", "0", 1)
                                     else:
-                                        sFileNameFound = sFileNameFound.replace("-", "", 1)  # delete the "-"
+                                        sFileNameFound = sFileNameFound.replace(
+                                            "-", "", 1
+                                        )  # delete the "-"
 
-                                    if not (sFileNameFound[7].isdigit() and sFileNameFound[8].isdigit()):
+                                    if not (
+                                        sFileNameFound[7].isdigit() and sFileNameFound[8].isdigit()
+                                    ):
                                         sFileNameFound = sFileNameFound.replace("-", "0", 1)
                                     else:
-                                        sFileNameFound = sFileNameFound.replace("-", "", 1)  # delete the "-"
+                                        sFileNameFound = sFileNameFound.replace(
+                                            "-", "", 1
+                                        )  # delete the "-"
 
                                     sPart1 = sFileNameFound[:8]
                                     sSubfolderName = sPart1[:6]
-                                    sFileNameFound = sFileNameFound[10 + 8:]
+                                    sFileNameFound = sFileNameFound[10 + 8 :]
                                 except Exception as e:
                                     print("***************** ERROR WHEN PARSING ***************")
                                     print(e)
-                                    print("Ignoring download command{0}".format(sActionCommand))
+                                    print(f"Ignoring download command{sActionCommand}")
                                     continue
                                 else:
-                                    sFileNameFound = sFileNameFound.replace(" ", "-")   # remove all spaces
-                                    sFileNameFound = sFileNameFound.replace("\n", "_")  # in linux there can be new
-                                                                                        # line in the name of the file
+                                    sFileNameFound = sFileNameFound.replace(
+                                        " ", "-"
+                                    )  # remove all spaces
+                                    sFileNameFound = sFileNameFound.replace(
+                                        "\n", "_"
+                                    )  # in linux there can be new
+                                    # line in the name of the file
 
-                                    if sSubfolderName == "" or not sSubfolderName[0].isdigit()                    \
-                                            or not sSubfolderName[1].isdigit()                                    \
-                                            or not sSubfolderName[2].isdigit() or not sSubfolderName[3].isdigit() \
-                                            or not sSubfolderName[4].isdigit() or not sSubfolderName[5].isdigit():
+                                    if (
+                                        sSubfolderName == ""
+                                        or not sSubfolderName[0].isdigit()
+                                        or not sSubfolderName[1].isdigit()
+                                        or not sSubfolderName[2].isdigit()
+                                        or not sSubfolderName[3].isdigit()
+                                        or not sSubfolderName[4].isdigit()
+                                        or not sSubfolderName[5].isdigit()
+                                    ):
                                         sSubfolderName = S_DOCDOWNLOADS_PATH + "_misc"
                                     else:
                                         sSubfolderName = S_DOCDOWNLOADS_PATH + sSubfolderName
@@ -167,14 +201,31 @@ class TRunner:
                                         os.makedirs(sSubfolderName)
 
                                     sSubfolderName = sSubfolderName + os.sep
-                                    sTitlePrefix2 = sTitlePrefix.replace("\n", "_").replace("\r", "_")
-                                    sFileNameBase = sSubfolderName + sPart1 + "_" + sTitlePrefix2 + "_" + sFileNameFound
+                                    sTitlePrefix2 = sTitlePrefix.replace("\n", "_").replace(
+                                        "\r", "_"
+                                    )
+                                    sFileNameBase = (
+                                        sSubfolderName
+                                        + sPart1
+                                        + "_"
+                                        + sTitlePrefix2
+                                        + "_"
+                                        + sFileNameFound
+                                    )
 
                                     if sTitle != "":
-                                        sTitle = sTitle.replace("  ", "-").replace(" ", "-").replace(",", "")
+                                        sTitle = (
+                                            sTitle.replace("  ", "-")
+                                            .replace(" ", "-")
+                                            .replace(",", "")
+                                        )
                                         sFileNameBase += "_" + sTitle
                                     if sDateZ != "":
-                                        sDateZ = sDateZ.replace("  ", "-").replace(" ", "-").replace(",", "")
+                                        sDateZ = (
+                                            sDateZ.replace("  ", "-")
+                                            .replace(" ", "-")
+                                            .replace(",", "")
+                                        )
                                         sFileNameBase += "_" + sDateZ
 
                                     sFileName = sFileNameBase + ".pdf"
@@ -182,13 +233,17 @@ class TRunner:
                                     if not os.path.isfile(sFileName):
                                         # print("downloading file {0}".format(sFileName))
                                         ra = requests.get(sActionCommand, allow_redirects=True)
-                                        open(sFileName, 'wb').write(ra.content)
+                                        open(sFileName, "wb").write(ra.content)
                                         # open(sFileNameTx, 'w', encoding='utf-8').writelines(sActionCommand)
                             else:
-                                print("Warning: ***************** IGNORING NON PDF DOCUMENTS?! ***************")
+                                print(
+                                    "Warning: ***************** IGNORING NON PDF DOCUMENTS?! ***************"
+                                )
         except Exception as exError:
             print(exError)
-            print("ERROR: Unexpected Failure while getting pdf Documents\n PROBABLY NEED TO CREATE A FOLDER")
+            print(
+                "ERROR: Unexpected Failure while getting pdf Documents\n PROBABLY NEED TO CREATE A FOLDER"
+            )
             exit()
 
     def Run(self):
@@ -202,7 +257,7 @@ class TRunner:
                 self.bRepeat = False
 
                 self.iCounter += 1
-                print("No. {0} **************".format(self.iCounter))
+                print(f"No. {self.iCounter} **************")
                 # sTheEntryType = ""
 
                 for d in res["data"]:
@@ -221,7 +276,9 @@ class TRunner:
                             if sTheEntryType == "timelineAccountBalance":
                                 guidEv2 = guidEv
                             else:
-                                oAction = d["data"]["action"]  # if here we threw an exception then it is expected
+                                oAction = d["data"][
+                                    "action"
+                                ]  # if here we threw an exception then it is expected
                         except KeyError:
                             pass
                         except Exception:
@@ -234,7 +291,7 @@ class TRunner:
                                 sType = sTheEntryType
 
                             if sType == "timelineDetail" or sType == "timelineAccountBalance":
-                                assert (guidEv2 == guidEv)
+                                assert guidEv2 == guidEv
                                 d2 = self.tr.timeline_detail(guidEv2)
                                 if d2 is not None:
                                     d2Pack = d2
@@ -242,10 +299,10 @@ class TRunner:
                                     sRecommendPrefix = TRunner.getRecommendPrefix(d2)
                                     TRunner.downloadFiles(d2Pack, sRecommendPrefix)
                             else:
-                                print("WARNING: new type of action {0}".format(sType))
+                                print(f"WARNING: new type of action {sType}")
                     except TRapiExcServerErrorState as eExx:
                         TRunner.iRemainingRetries -= 1
-                        print("\t**** remaining retries {0}".format(TRunner.iRemainingRetries))
+                        print(f"\t**** remaining retries {TRunner.iRemainingRetries}")
                         if TRunner.iRemainingRetries <= 0:
                             print(" ****  ")
                             raise eExx
@@ -257,7 +314,9 @@ class TRunner:
                     # end  of for
 
                 if self.bRepeat:
-                    sTemp = "\t*** Starting over - remaining Retries {0}\n\tup to {1} will go faster"
+                    sTemp = (
+                        "\t*** Starting over - remaining Retries {0}\n\tup to {1} will go faster"
+                    )
                     print(sTemp.format(TRunner.iRemainingRetries, self.iCounter))
                     time.sleep(15)
                     self.InitMe()
@@ -279,12 +338,14 @@ class TRunner:
             TRunner.SaveOldOutput(S_OUTPUT_DIR, S_TIMELN_JSNFILE, RUN_GUID, "json")
             with open(S_TIMELN_JSNFILE_PATH, "w") as f:
                 json.dump(self.data, f, indent="\t")
-                print("\tSUCCESS: Events JSON File written{0}\n".format(S_TIMELN_JSNFILE_PATH))
+                print(f"\tSUCCESS: Events JSON File written{S_TIMELN_JSNFILE_PATH}\n")
 
             TRunner.SaveOldOutput(S_OUTPUT_DIR, S_TIMELD_JSNFILE, RUN_GUID, "json")
             with open(S_TIMELD_JSNFILE_PATH, "w") as f:
                 json.dump(self.dataEvDetails, f, indent="\t")
-                print("\tSUCCESS: Details for Events JSON File written{0}\n".format(S_TIMELN_JSNFILE_PATH))
+                print(
+                    f"\tSUCCESS: Details for Events JSON File written{S_TIMELN_JSNFILE_PATH}\n"
+                )
 
             print(" DONE: ************   finished EXPORTING!  ************ ")
 

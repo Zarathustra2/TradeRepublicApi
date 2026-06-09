@@ -1,26 +1,26 @@
 import json
 import re
 from datetime import datetime
-from environment import LOCALE
-from environment import CURRENCY
+
+from environment import CURRENCY, LOCALE
 
 # Read my timeline
-with open("myTimeline.json", "r", encoding="utf-8") as f:
+with open("myTimeline.json", encoding="utf-8") as f:
     timeline = json.loads(f.read())
 
 # Read stock JSON data
-with open("../LS/isins.json", "r", encoding="utf-8") as f:
+with open("../LS/isins.json", encoding="utf-8") as f:
     lsIsins = json.loads(f.read())
 
 # All stocks crawled from TR
-with open("allStocks.json", "r", encoding="utf-8") as f:
+with open("allStocks.json", encoding="utf-8") as f:
     allStocks = json.loads(f.read())
     companyNames = {}
     for stock in allStocks:
         companyNames[stock["company"]["name"]] = stock["isin"]
 
 # Fixed ISINs
-with open("companyNameIsins.json", "r", encoding="utf-8") as f:
+with open("companyNameIsins.json", encoding="utf-8") as f:
     fixedIsins = json.loads(f.read())
 
 
@@ -96,14 +96,30 @@ with open("myTransactions.csv", "w") as f:
         if title == "Einzahlung" or title == "Cash In":
             f.write(
                 "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
-                    date, "Einlage" if LOCALE == "de" else "Cash In", "", "", event["cashChangeAmount"], "", "", "",CURRENCY
+                    date,
+                    "Einlage" if LOCALE == "de" else "Cash In",
+                    "",
+                    "",
+                    event["cashChangeAmount"],
+                    "",
+                    "",
+                    "",
+                    CURRENCY,
                 )
             )
 
         elif title == "Auszahlung" or title == "Cash Out":
             f.write(
                 "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
-                    date, "Entnahme" if LOCALE == "de" else "Cash Out", "", "", abs(event["cashChangeAmount"]), "", "", "",CURRENCY
+                    date,
+                    "Entnahme" if LOCALE == "de" else "Cash Out",
+                    "",
+                    "",
+                    abs(event["cashChangeAmount"]),
+                    "",
+                    "",
+                    "",
+                    CURRENCY,
                 )
             )
 
@@ -131,7 +147,7 @@ with open("myTransactions.csv", "w") as f:
             )
             if isin == "" and title not in missingIsins.keys():
                 missingIsins[title] = ""
-                print("WARNING: Company not found ({0}), missing ISIN".format(title))
+                print(f"WARNING: Company not found ({title}), missing ISIN")
 
         # Savings plan execution or normal buy
         elif (
@@ -144,14 +160,16 @@ with open("myTransactions.csv", "w") as f:
         ):
             fee = 0
             if (
-                body.startswith("Kauf") or body.startswith("Limit Kauf zu")
-                or body.startswith("Buy order") or body.startswith("Limit Buy order")
+                body.startswith("Kauf")
+                or body.startswith("Limit Kauf zu")
+                or body.startswith("Buy order")
+                or body.startswith("Limit Buy order")
             ):
                 fee = 1.0
             isin = getIsinFromStockName(title)
             amountPerShare = abs(float(getDecimalFromString(body)))
             cashChangeAmount = abs(event["cashChangeAmount"])
-            shares = "{0:.4f}".format((cashChangeAmount - fee) / amountPerShare)
+            shares = f"{(cashChangeAmount - fee) / amountPerShare:.4f}"
             f.write(
                 "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
                     date,
@@ -167,7 +185,7 @@ with open("myTransactions.csv", "w") as f:
             )
             if isin == "" and title not in missingIsins.keys():
                 missingIsins[title] = ""
-                print("WARNING: Company not found ({0}), missing ISIN".format(title))
+                print(f"WARNING: Company not found ({title}), missing ISIN")
 
         # Sell
         elif (
@@ -178,16 +196,18 @@ with open("myTransactions.csv", "w") as f:
         ):
             isin = getIsinFromStockName(title)
             taxRate = 0.2782
-            profit = abs(float(re.findall("[-+]?\d.*\.\d+|\d+", body)[1].replace(",", "")) / 100) #as decimal (percentage)
+            profit = abs(
+                float(re.findall("[-+]?\d.*\.\d+|\d+", body)[1].replace(",", "")) / 100
+            )  # as decimal (percentage)
             amountPerShare = abs(float(getDecimalFromString(body)))
             cashChangeAmount = abs(event["cashChangeAmount"])
             buy = (cashChangeAmount + 1) / (1 + profit - profit * taxRate)
             sell = buy * (1 + profit)
             taxes = sell * taxRate
-            if len(isin) > 4: #round to account for errors while calculating taxes
-                shares = "{0:.4f}".format(cashChangeAmount / amountPerShare)
+            if len(isin) > 4:  # round to account for errors while calculating taxes
+                shares = f"{cashChangeAmount / amountPerShare:.4f}"
             else:
-                shares = "{0:.4f}".format(sell / amountPerShare)
+                shares = f"{sell / amountPerShare:.4f}"
             f.write(
                 "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
                     date,
@@ -203,7 +223,7 @@ with open("myTransactions.csv", "w") as f:
             )
             if isin == "" and title not in missingIsins.keys():
                 missingIsins[title] = ""
-                print("WARNING: Company not found ({0}), missing ISIN".format(title))
+                print(f"WARNING: Company not found ({title}), missing ISIN")
 
 if len(missingIsins.keys()) > 0:
     print("--- MISSING ISINs ---")

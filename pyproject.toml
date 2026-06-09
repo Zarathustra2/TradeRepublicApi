@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "trade-republic-api"
+version = "0.1.0"
+description = "Unofficial Python client for the Trade Republic broker API"
+requires-python = ">=3.11"
+dependencies = [
+    "ecdsa>=0.18",
+    "requests>=2.31",
+    "websockets>=12.0",
+    "deprecated>=1.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "pytest-xdist>=3.5",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+    "pyright>=1.1",
+]
+# Extra dependency used only by the scripts under examples/ (interactive PIN entry).
+examples = [
+    "getpass4>=0.0.14",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/trapi"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "N"]
+
+[tool.ruff.lint.per-file-ignores]
+# Legacy example/data scripts: star imports, broad excepts, and the original
+# hungarian-notation naming are tolerated until they are refactored.
+"examples/*.py" = ["E722", "F403", "F405", "N8", "E501"]
+"LS/*.py" = ["E722", "N8", "E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-n auto"
+asyncio_mode = "auto"
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+include = ["src"]

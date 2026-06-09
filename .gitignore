@@ -6,8 +6,15 @@ key
 
 # Python
 __pycache__
-trapi/__pycache__
+src/trapi/__pycache__
 .venv/
+
+# Tooling caches
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
 
 # IDE
 .idea/

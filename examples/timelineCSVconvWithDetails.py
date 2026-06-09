@@ -13,9 +13,9 @@
 import copy
 import json
 import re
+import sys
 from datetime import datetime
 from decimal import *
-import sys
 
 # from chardet import detect
 
@@ -33,19 +33,20 @@ if LOCALE != "de":
 print("==***START CONVERSION***================================================\n")
 
 # Read my timeline
-with open(envConsts.S_TIMELN_JSNFILE_PATH, "r", encoding="utf-8") as f:
+with open(envConsts.S_TIMELN_JSNFILE_PATH, encoding="utf-8") as f:
     timeline = json.loads(f.read())
 
 # Details open
-with open(envConsts.S_TIMELD_JSNFILE_PATH, "r", encoding="utf-8") as f:
+with open(envConsts.S_TIMELD_JSNFILE_PATH, encoding="utf-8") as f:
     timeline_det = json.loads(f.read())
 
 # Fixed ISINs
-with open(envConsts.S_COMPNAMEISINS_PATH , "r", encoding="utf-8") as f:
+with open(envConsts.S_COMPNAMEISINS_PATH, encoding="utf-8") as f:
     fixedIsins = json.loads(f.read())
 
-with open("examples/ignoredEntries.json", "r", encoding="utf-8") as f:
+with open("examples/ignoredEntries.json", encoding="utf-8") as f:
     entriesToIgnorePre = json.loads(f.read())
+
 
 # Extract decimal number in a string
 def getDecimalFromString(inputString: str) -> Decimal:
@@ -92,7 +93,8 @@ def reportAndAddMissingISINs(isin: str, title: str, tmID: str, date: datetime) -
     if isin == "" and title not in missingIsins.keys():
         missingIsins[title] = ""
         print(
-            "WARNING: Company(event title) not found ({0}), missing ISIN @ ({2}) in id({1})".format(title, tmID, date))
+            f"WARNING: Company(event title) not found ({title}), missing ISIN @ ({date}) in id({tmID})"
+        )
 
 
 def inCurrencyType(dec: Decimal) -> float:
@@ -130,7 +132,7 @@ def processEvent(detailEv, lColList2, lTypeList2, currRecord):
             if bProcess:
                 for secItem in sec["data"]:
                     itemTitle = secItem["title"]
-                    sDetAttribName = "{0}({1})".format(itemTitle, sSecItemTitle)
+                    sDetAttribName = f"{itemTitle}({sSecItemTitle})"
                     itemValue: float = 0
                     bValue: bool = False
                     try:
@@ -142,7 +144,7 @@ def processEvent(detailEv, lColList2, lTypeList2, currRecord):
                         itemType = secItem["detail"]["type"]
                         # itemValue = secItem["detail"]["value"]
                         if currRecord is None:
-                            if not (sDetAttribName in lColList2):
+                            if sDetAttribName not in lColList2:
                                 lColList2.append(sDetAttribName)
                                 lTypeList2.append(itemType)
                             else:
@@ -153,9 +155,8 @@ def processEvent(detailEv, lColList2, lTypeList2, currRecord):
                             # we currently ignore type
 
     if currRecord is not None:
-        currRecord[DET_COMMENT_HEADER] = "{0}, Summary Entries {1}, Accounting Entries: {2}".format(sMasterTitle
-                                                                                                    , iNoOfSummary
-                                                                                                    , iAbrNo)
+        currRecord[DET_COMMENT_HEADER] = f"{sMasterTitle}, Summary Entries {iNoOfSummary}, Accounting Entries: {iAbrNo}"
+
 
 def makeDetailsDictionary(timeline_det2, detailDict2):
     for detailEv2 in timeline_det2:
@@ -194,6 +195,7 @@ def initCols(lColList2, lTypeList2):
     lColList2.append("Comment")
     lTypeList2.append("string")
 
+
 def reorderColumns(lColList2, lTypeList2):
     storedList = copy.deepcopy(lColList2)
     storedTypeList = copy.deepcopy(lTypeList2)
@@ -201,45 +203,46 @@ def reorderColumns(lColList2, lTypeList2):
     lTypeList2.clear()
 
     # This is just a wished order. In case the column does not exist it will only print a warning
-    S_ORDEREDCOLS = ["Datum"   # : "2021-12-01 18:41:29",
-                    , "Type"  #
-                    , "ISIN"  # : "US19260Q1076",
-                    , "Name"  # "Kauf/verkauf/company name
-                    , "PricePerShareInEuroMilliCent"  # : 2755000,
-                    , "BankChangeInEuroMilliCent"  # : -27560000,
-                    , "Anzahl(\u00dcbersicht)"  # : 10,
-                    , "Limit Preis(\u00dcbersicht)"  # "",
-                    , "Vrs. Total(\u00dcbersicht)"   # "",
-                    , "Preis(\u00dcbersicht)"        # 275.5,
-                    , "Total(\u00dcbersicht)"        # 2755.0,
-                    , "Gesamt(\u00dcbersicht)"       # : "",
-                    , "Bestand(\u00dcbersicht)"      # "" : ,
-                    , "Dividende pro St\u00fcck(\u00dcbersicht)"  # : "",
-                    , "Bemessungsgrundlage(Abrechnung)"  # : -2755,
-                    , "Fremdkostenzuschlag(Abrechnung)"  # : -1,
-                    , "Gesamt(Abrechnung)"               # : -2756,
-                    , "Kapitalertragssteuer(Abrechnung)"  # : "",
-                    , "Solidarit\u00e4tszuschlag(Abrechnung)"  # : "",
-                    , "Eintragung Namensaktie(Abrechnung)"  # : "",
-                    , "Mehrwertsteuer(Abrechnung)"  # : "",
-                    , "Quellensteuer DE f\u00fcr US-Emittent(Abrechnung)"  # : "",
-                    , "Zwischensumme(Abrechnung)"  # : "",
-                    , "Wechselkurs(Abrechnung)"  # : "",
-                    , "Kapitalertragssteuer Optimierung(Abrechnung)"  # : "",
-                    , "Solidarit\u00e4tszuschlag Optimierung(Abrechnung)"  # : ""
-                    , "Kapitalertragssteuer Optimierung(Abrechnung 2)"  # : "",
-                    , "Solidarit\u00e4tszuschlag Optimierung(Abrechnung 2)"  # : "",
-                    , "Gesamt(Abrechnung 2)"  # : "",
-                    ]
-                        # NOT ORDERED - if another language is used these will be more
-                        # "TRANS_ID"
-                        # "RAW_Timestamp"
-                        # "RAW_JsonBody"
-                        # "NofShares": -10, Calculated and reversed that is why I prefer to keep it as
-                        #                just info - Anzahl is more reliable
-                        # "Geb\u00fchrenInEuroMilliCent": -10000,
-                        # "Comment": "",
-                        # "Detail Comment": "Kauf Coinbase, Summary Entries 1, Accounting Entries: 1",
+    S_ORDEREDCOLS = [
+        "Datum",  # : "2021-12-01 18:41:29",
+        "Type",  #
+        "ISIN",  # : "US19260Q1076",
+        "Name",  # "Kauf/verkauf/company name
+        "PricePerShareInEuroMilliCent",  # : 2755000,
+        "BankChangeInEuroMilliCent",  # : -27560000,
+        "Anzahl(\u00dcbersicht)",  # : 10,
+        "Limit Preis(\u00dcbersicht)",  # "",
+        "Vrs. Total(\u00dcbersicht)",  # "",
+        "Preis(\u00dcbersicht)",  # 275.5,
+        "Total(\u00dcbersicht)",  # 2755.0,
+        "Gesamt(\u00dcbersicht)",  # : "",
+        "Bestand(\u00dcbersicht)",  # "" : ,
+        "Dividende pro St\u00fcck(\u00dcbersicht)",  # : "",
+        "Bemessungsgrundlage(Abrechnung)",  # : -2755,
+        "Fremdkostenzuschlag(Abrechnung)",  # : -1,
+        "Gesamt(Abrechnung)",  # : -2756,
+        "Kapitalertragssteuer(Abrechnung)",  # : "",
+        "Solidarit\u00e4tszuschlag(Abrechnung)",  # : "",
+        "Eintragung Namensaktie(Abrechnung)",  # : "",
+        "Mehrwertsteuer(Abrechnung)",  # : "",
+        "Quellensteuer DE f\u00fcr US-Emittent(Abrechnung)",  # : "",
+        "Zwischensumme(Abrechnung)",  # : "",
+        "Wechselkurs(Abrechnung)",  # : "",
+        "Kapitalertragssteuer Optimierung(Abrechnung)",  # : "",
+        "Solidarit\u00e4tszuschlag Optimierung(Abrechnung)",  # : ""
+        "Kapitalertragssteuer Optimierung(Abrechnung 2)",  # : "",
+        "Solidarit\u00e4tszuschlag Optimierung(Abrechnung 2)",  # : "",
+        "Gesamt(Abrechnung 2)",  # : "",
+    ]
+    # NOT ORDERED - if another language is used these will be more
+    # "TRANS_ID"
+    # "RAW_Timestamp"
+    # "RAW_JsonBody"
+    # "NofShares": -10, Calculated and reversed that is why I prefer to keep it as
+    #                just info - Anzahl is more reliable
+    # "Geb\u00fchrenInEuroMilliCent": -10000,
+    # "Comment": "",
+    # "Detail Comment": "Kauf Coinbase, Summary Entries 1, Accounting Entries: 1",
     # APPLY the order
     storedTypeListTypes = {}
     iL: int = 0
@@ -247,7 +250,7 @@ def reorderColumns(lColList2, lTypeList2):
         storedTypeListTypes[storedList[iL]] = storedTypeList[iL]
         iL += 1
 
-    for sColName in S_ORDEREDCOLS: 
+    for sColName in S_ORDEREDCOLS:
         if sColName in storedList:
             lColList2.append(sColName)
             lTypeList2.append(storedTypeListTypes[sColName])
@@ -271,9 +274,25 @@ def initRecord(lColList2, lTypeList2, outRecord2):
         outRecord2[lColList2[k]] = ""
         k += 1
 
-def prepRecord(detEv, outRec, tmId2,  sTimestamp2, szBody, date2, sType, iNoShares, mcentsPricePerShare,
-               mcentsChangeAmount, mFee,  sIsin,  sTitle2,  szProcessingComment,
-               lColList2=lColList, lTypeList2=lTypeList):
+
+def prepRecord(
+    detEv,
+    outRec,
+    tmId2,
+    sTimestamp2,
+    szBody,
+    date2,
+    sType,
+    iNoShares,
+    mcentsPricePerShare,
+    mcentsChangeAmount,
+    mFee,
+    sIsin,
+    sTitle2,
+    szProcessingComment,
+    lColList2=lColList,
+    lTypeList2=lTypeList,
+):
     outRec["TRANS_ID"] = tmId2
     outRec["RAW_Timestamp"] = sTimestamp2
     outRec["RAW_JsonBody"] = szBody
@@ -289,7 +308,8 @@ def prepRecord(detEv, outRec, tmId2,  sTimestamp2, szBody, date2, sType, iNoShar
     if detEv is not None:
         processEvent(detEv, lColList2, lTypeList, outRec)
 
-def writeRecord(fFile, lColList2 , outRecord2):
+
+def writeRecord(fFile, lColList2, outRecord2):
     j: int = 0
     iLength = len(lColList2)
     sTemp = ""
@@ -318,8 +338,8 @@ if sTypeName != "timelineEvent":
 # Write transactions.csv file
 # date, transaction, shares, amount, total, fee, isin, name
 
-iTotalCount = int(0)
-iRoundingErrCount = int(0)
+iTotalCount = 0
+iRoundingErrCount = 0
 
 with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
     # write Header
@@ -330,7 +350,7 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
         sProcessingComment = ""
         event = event["data"]
         iTimestamp: int = event["timestamp"]
-        sTimestamp: str = "\"'{0}\"".format(event["timestamp"])
+        sTimestamp: str = '"\'{0}"'.format(event["timestamp"])
         dateTime = datetime.fromtimestamp(int(event["timestamp"] / 1000))
         date: datetime = dateTime.strftime("%Y-%m-%d %H:%M:%S")
         tmID = event["id"]
@@ -339,7 +359,7 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
 
         try:
             body = event["body"]
-            sBody = "\"{0}\"".format(body.replace("\n", "\\n").replace("\u20ac", "**"))
+            sBody = '"{0}"'.format(body.replace("\n", "\\n").replace("\u20ac", "**"))
             sBody = sBody.replace("\ufffc", "**").replace(",", ".")
         except KeyError:
             body = ""
@@ -360,15 +380,26 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
             szType = sBody
 
         # This is Default Prep - later processing is overwriting it
-        prepRecord(None, outRec=outRecord, tmId2=tmID, sTimestamp2=sTimestamp
-            , szBody=sBody, date2=date, sType=szType, iNoShares="", mcentsPricePerShare=""
-            , mcentsChangeAmount="", mFee="", sIsin="", sTitle2=sBody
-            , szProcessingComment="Default Comment")
+        prepRecord(
+            None,
+            outRec=outRecord,
+            tmId2=tmID,
+            sTimestamp2=sTimestamp,
+            szBody=sBody,
+            date2=date,
+            sType=szType,
+            iNoShares="",
+            mcentsPricePerShare="",
+            mcentsChangeAmount="",
+            mFee="",
+            sIsin="",
+            sTitle2=sBody,
+            szProcessingComment="Default Comment",
+        )
 
         # Cash in and out
-        if (title == "Einzahlung"
-                or title == "Auszahlung"):
-                # TODO add entries for English
+        if title == "Einzahlung" or title == "Auszahlung":
+            # TODO add entries for English
             tmpStr: str = str(event["cashChangeAmount"])
             cashChangeAmount: Decimal = Decimal(tmpStr)
             sOperation = "if this is output then there is error"
@@ -383,37 +414,46 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
                 else:
                     sOperation = "Cash Out"
 
-            prepRecord(detailEvZ, outRecord, tmID, sTimestamp , sBody
-                , date
-                , sOperation   # "Vorabpauschale",#"Pre-tax",
-                , ""  # empty number of shares
-                , ""  # empty price per share
-                , inCurrencyType(cashChangeAmount)
-                , ""  # no fee ... hopefully
-                , ""  # isin
-                , ""  # title
-                , sProcessingComment)
+            prepRecord(
+                detailEvZ,
+                outRecord,
+                tmID,
+                sTimestamp,
+                sBody,
+                date,
+                sOperation,  # "Vorabpauschale",#"Pre-tax",
+                "",  # empty number of shares
+                "",  # empty price per share
+                inCurrencyType(cashChangeAmount),
+                "",  # no fee ... hopefully
+                "",  # isin
+                "",  # title
+                sProcessingComment,
+            )
 
             writeRecord(f, lColList, outRecord)
 
-        elif ("Vorabpauschale" in body
-              or "Steuerabrechnung" in title
-        ):
+        elif "Vorabpauschale" in body or "Steuerabrechnung" in title:
             # pretax ...?!
             isin = getIsinFromStockName(title)
             tmpStr: str = str(event["cashChangeAmount"])
             cashChangeAmount: Decimal = Decimal(tmpStr)
-            prepRecord(detailEvZ, outRecord, tmID, sTimestamp
-                       , sBody
-                       , date
-                       , title
-                       , ""
-                       , ""
-                       , inCurrencyType(cashChangeAmount)
-                       , ""
-                       , isin
-                       , title
-                       , sProcessingComment)
+            prepRecord(
+                detailEvZ,
+                outRecord,
+                tmID,
+                sTimestamp,
+                sBody,
+                date,
+                title,
+                "",
+                "",
+                inCurrencyType(cashChangeAmount),
+                "",
+                isin,
+                title,
+                sProcessingComment,
+            )
             # processEvent(detailEvZ, lColList, lTypeList, outRecord)
             writeRecord(f, lColList, outRecord)
         elif title == "Eintragung Aktienregister":
@@ -432,16 +472,22 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
             tmpStr: str = str(event["cashChangeAmount"])
             cashChangeAmount: Decimal = Decimal(tmpStr)
 
-            prepRecord(detailEvZ, outRecord, tmID, sTimestamp , sBody
-                , date
-                , title  # sFoundName  # "Vorabpauschale",#"Pre-tax",
-                , ""     # empty number of shares
-                , ""     # empty price per share
-                , inCurrencyType(cashChangeAmount)
-                , inCurrencyType(cashChangeAmount)  # yes this is pure fee"", #fee?!
-                , isin
-                , sFoundName
-                , sProcessingComment)
+            prepRecord(
+                detailEvZ,
+                outRecord,
+                tmID,
+                sTimestamp,
+                sBody,
+                date,
+                title,  # sFoundName  # "Vorabpauschale",#"Pre-tax",
+                "",  # empty number of shares
+                "",  # empty price per share
+                inCurrencyType(cashChangeAmount),
+                inCurrencyType(cashChangeAmount),  # yes this is pure fee"", #fee?!
+                isin,
+                sFoundName,
+                sProcessingComment,
+            )
             # processEvent(detailEvZ, lColList, lTypeList, outRecord)
             writeRecord(f, lColList, outRecord)
 
@@ -458,16 +504,22 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
             tmpStr: str = str(event["cashChangeAmount"])
             cashChangeAmount: Decimal = Decimal(tmpStr)
 
-            prepRecord(detailEvZ, outRecord, tmID, sTimestamp , sBody
-                , date
-                , "Dividende" if LOCALE == "de" else "Dividend"
-                , ""  # empty number of shares
-                , ""  # empty price per share
-                , inCurrencyType(cashChangeAmount)
-                , ""
-                , isin
-                , title
-                , sProcessingComment)
+            prepRecord(
+                detailEvZ,
+                outRecord,
+                tmID,
+                sTimestamp,
+                sBody,
+                date,
+                "Dividende" if LOCALE == "de" else "Dividend",
+                "",  # empty number of shares
+                "",  # empty price per share
+                inCurrencyType(cashChangeAmount),
+                "",
+                isin,
+                title,
+                sProcessingComment,
+            )
             # processEvent(detailEvZ, lColList, lTypeList, outRecord)
             writeRecord(f, lColList, outRecord)
             reportAndAddMissingISINs(isin, title, tmID, date)
@@ -475,14 +527,14 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
         # Savings plan execution or normal buy
         # OR Sell
         elif (
-                body.startswith("Sparplan ausgeführt")
-                or body.startswith("Kauf")
-                or body.startswith("Limit Kauf zu")
-                or body.startswith("Verkauf")
-                or body.startswith("Limit Verkauf zu")
-                or body.startswith("Savings Plan executed")
-                or body.startswith("Buy order")
-                or body.startswith("Limit Buy order")
+            body.startswith("Sparplan ausgeführt")
+            or body.startswith("Kauf")
+            or body.startswith("Limit Kauf zu")
+            or body.startswith("Verkauf")
+            or body.startswith("Limit Verkauf zu")
+            or body.startswith("Savings Plan executed")
+            or body.startswith("Buy order")
+            or body.startswith("Limit Buy order")
         ):
             sOperation: str = ""  # to be re-merged for LOCAL
             if body.startswith("Kauf") or body.startswith("Limit Kauf zu"):
@@ -495,46 +547,52 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
                 sOperation = "Kauf"
                 fee = 0
             isin = getIsinFromStockName(title)
-            amountPerShare: Decimal = (getDecimalFromString(body))  # .copy_abs())
+            amountPerShare: Decimal = getDecimalFromString(body)  # .copy_abs())
             tmpStr: str = str(event["cashChangeAmount"])
             cashChangeAmount: Decimal = Decimal(tmpStr)  # .copy_abs()
             netCash: Decimal = Decimal(cashChangeAmount - Decimal(fee))  # the amount is always
-            shares: Decimal = (netCash / amountPerShare)
+            shares: Decimal = netCash / amountPerShare
             intShares: int = int(round(shares))
             iTotalCount = iTotalCount + 1
             if netCash.compare(Decimal(intShares) * amountPerShare) != 0:
                 iRoundingErrCount = iRoundingErrCount + 1
                 # print("WARNING: Rounding Error")  # should be an ASSERT(FALSE);
-                sProcessingComment = "{0} !=  {1} * {2} DIFF is: {3} @ {4} | {5} {6}".format(
-                    netCash, intShares, amountPerShare, netCash - (Decimal(intShares) * amountPerShare), date, title,
-                    isin)
+                sProcessingComment = f"{netCash} !=  {intShares} * {amountPerShare} DIFF is: {netCash - (Decimal(intShares) * amountPerShare)} @ {date} | {title} {isin}"
                 # print(sProcessingComment)
 
-            prepRecord(detailEvZ, outRecord, tmID, sTimestamp , sBody
-                , date
-                , sOperation
-                , intShares
-                , inCurrencyType(amountPerShare)
-                , inCurrencyType(cashChangeAmount)
-                , inCurrencyType(fee)
-                , isin
-                , title
-                , sProcessingComment)
+            prepRecord(
+                detailEvZ,
+                outRecord,
+                tmID,
+                sTimestamp,
+                sBody,
+                date,
+                sOperation,
+                intShares,
+                inCurrencyType(amountPerShare),
+                inCurrencyType(cashChangeAmount),
+                inCurrencyType(fee),
+                isin,
+                title,
+                sProcessingComment,
+            )
             # processEvent(detailEvZ, lColList, lTypeList, outRecord)
             writeRecord(f, lColList, outRecord)
 
             reportAndAddMissingISINs(isin, title, tmID, date)
 
         elif (  # b100
-              body.startswith("Limit Kauf-Order storniert")
-              or body.startswith("Limit Kauf-Order ausgelaufen")
-              or body.startswith("Hauptversammlung")
-              or title.startswith("E-Mail bestätigt")
-              or title.startswith("Ex-Post Kosteninformation")  # Only informative according to the TR site
-              # https://support.traderepublic.com/de-de/133-Was-ist-die-Ex_Post-Kosteninformation
-              or title.startswith("Unterlagen Aktualisierung")
-              or body.startswith("Limit Verkauf-Order ausgelaufen")
-              or "storniert" in body
+            body.startswith("Limit Kauf-Order storniert")
+            or body.startswith("Limit Kauf-Order ausgelaufen")
+            or body.startswith("Hauptversammlung")
+            or title.startswith("E-Mail bestätigt")
+            or title.startswith(
+                "Ex-Post Kosteninformation"
+            )  # Only informative according to the TR site
+            # https://support.traderepublic.com/de-de/133-Was-ist-die-Ex_Post-Kosteninformation
+            or title.startswith("Unterlagen Aktualisierung")
+            or body.startswith("Limit Verkauf-Order ausgelaufen")
+            or "storniert" in body
         ):
             bFail: bool = True
             try:  # by definition this MUST fail. Otherwise, we MUST not ignore this line
@@ -542,8 +600,9 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
             except KeyError:
                 bFail = False
             if bFail:
-                print("ERROR: unhandled JSON Entry with ***_cashChangeAmount_ = {3}***\n    from {2} {0} | {1}".format(
-                    title, body, date, tmpStr))
+                print(
+                    f"ERROR: unhandled JSON Entry with ***_cashChangeAmount_ = {tmpStr}***\n    from {date} {title} | {body}"
+                )
                 exit(-1)
                 sFoundName = ""
             sFoundName = ""
@@ -556,16 +615,22 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
             else:
                 isin = ""
 
-            prepRecord(detailEvZ, outRecord, tmID, sTimestamp , sBody
-                           , date
-                           , sBody  # ,  title
-                           , ""
-                           , ""
-                           , ""
-                           , ""
-                           , isin
-                           , title
-                           , "b100 Default comment")
+            prepRecord(
+                detailEvZ,
+                outRecord,
+                tmID,
+                sTimestamp,
+                sBody,
+                date,
+                sBody,  # ,  title
+                "",
+                "",
+                "",
+                "",
+                isin,
+                title,
+                "b100 Default comment",
+            )
 
         elif tmID in entriesToIgnorePre:
             bFail: bool = True
@@ -575,20 +640,20 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
                 tmpStr = ""  # defence
                 bFail = False
             if bFail:
-                print("ERROR: IGNORED ENTRY with ***_cashChangeAmount_***\n    from {2} {0} | {1} |{3}".format(title,
-                                                                                                               body,
-                                                                                                               date,
-                                                                                                               tmID))
-                print("       cashChangeAmount = {0}".format(tmpStr))
+                print(
+                    f"ERROR: IGNORED ENTRY with ***_cashChangeAmount_***\n    from {date} {title} | {body} |{tmID}"
+                )
+                print(f"       cashChangeAmount = {tmpStr}")
                 print("       CORRECT YOUR ignoredEntries.json file!!!")
                 print("       FAILING TO FIX THIS MAY RESULT IN UNBALANCED CALCULATIONS\n")
                 print("************************* ERROR \n")
                 exit(-1)
         else:
-            sRecommendedEntryComment = "title {0} | body {1} | datetime: {2} unhandled JSON ENTRY".format(title, body,
-                                                                                                         date)
+            sRecommendedEntryComment = (
+                f"title {title} | body {body} | datetime: {date} unhandled JSON ENTRY"
+            )
             entriesToIgnore[tmID] = sRecommendedEntryComment
-            print("WARNING: guid \"{0}\": \"{1}\"".format(tmID, sRecommendedEntryComment))
+            print(f'WARNING: guid "{tmID}": "{sRecommendedEntryComment}"')
 
         outRecords.append(outRecord)
 
@@ -604,7 +669,7 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
             sOutStr += ";"
         sOutStr += lColList[i]
         i += 1
-    f.writelines("{0}\n".format(sOutStr))
+    f.writelines(f"{sOutStr}\n")
 
     # write rows
     for eRec in outRecords:
@@ -616,7 +681,7 @@ with open(envConsts.S_TRANSA_CSVFILE_PATH, "w") as f:
                 sOutStr += ";"
             sOutStr += str(eRec[lColList[i]])
             i += 1
-        f.writelines("{0}\n".format(sOutStr))
+        f.writelines(f"{sOutStr}\n")
     f.close()
 
 if len(missingIsins.keys()) > 0:
@@ -635,7 +700,7 @@ if len(entriesToIgnore.keys()) > 0:
     print("***> Add these to your ignoredEntries.json file after checking each of them\n")
 
 print("=======================================================\n")
-print("TotalCount:{0} RoundingCount: {1}\n".format(iTotalCount, iRoundingErrCount))
+print(f"TotalCount:{iTotalCount} RoundingCount: {iRoundingErrCount}\n")
 
 with open(envConsts.S_TIMELD_FLATJSNFILE_PATH, "w", encoding="utf-8") as f2:
     f2.write(json.dumps(outRecords, indent="\t", sort_keys=False))

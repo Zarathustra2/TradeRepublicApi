@@ -1,12 +1,12 @@
 import sys
 
 sys.path.append("../")
-from trapi.api import TRApi
+import asyncio
+import json
 
 from environment import *
 
-import json
-import asyncio
+from trapi.api import TRApi
 
 
 def process(jsonData):

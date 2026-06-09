@@ -1,16 +1,15 @@
-from ecdsa import NIST256p, SigningKey
-from ecdsa.util import sigencode_der
+import asyncio
 import base64
 import hashlib
+import json
+import os
 import time
+
 import requests
-import asyncio
 import websockets
 from deprecated import deprecated
-
-import os
-
-import json
+from ecdsa import NIST256p, SigningKey
+from ecdsa.util import sigencode_der
 
 
 class TRapiException(Exception):
@@ -28,7 +27,7 @@ class TRapiExcServerUnknownState(TRapiException):
 class TRApi:
     url = "https://api.traderepublic.com"
 
-    def __init__(self, number, pin, locale='en'):
+    def __init__(self, number, pin, locale="en"):
         self.number = number
         self.pin = pin
         self.locale = locale
@@ -97,8 +96,7 @@ class TRApi:
 
         # The user is currently signed in with a different device
         if res == None or (
-                res.status_code == 401
-                and not kwargs.get("already_tried_registering", False)
+            res.status_code == 401 and not kwargs.get("already_tried_registering", False)
         ):
             self.register_new_device()
             res = self.login(already_tried_registering=True)
@@ -124,7 +122,9 @@ class TRApi:
             response = await self.ws.recv()
 
             if not response == "connected":
-                raise TRapiException(f"Connection Error: {response}")  # ValueError(f"Connection Error: {response}")
+                raise TRapiException(
+                    f"Connection Error: {response}"
+                )  # ValueError(f"Connection Error: {response}")
 
         payload = kwargs.get("payload", {"type": payload_key})
         payload["token"] = self.sessionToken
@@ -144,9 +144,7 @@ class TRApi:
 
         if self.signing_key is None:
             with open("key", "rb") as f:
-                self.signing_key = SigningKey.from_pem(
-                    f.read(), hashfunc=hashlib.sha512
-                )
+                self.signing_key = SigningKey.from_pem(f.read(), hashfunc=hashlib.sha512)
 
         timestamp = int(time.time() * 1000)
 
@@ -175,8 +173,25 @@ class TRApi:
     exchange_list = ["LSX", "TDG", "LUS", "TUB", "BHS", "B2C"]
     range_list = ["1d", "5d", "1m", "3m", "1y", "max"]
     instrument_list = ["stock", "fund", "derivative", "crypto"]
-    jurisdiction_list = ["AT", "DE", "ES", "FR", "IT", "NL", "BE", "EE", "FI", "IE", "GR", "LU", "LT",
-                         "LV", "PT", "SI", "SK"]
+    jurisdiction_list = [
+        "AT",
+        "DE",
+        "ES",
+        "FR",
+        "IT",
+        "NL",
+        "BE",
+        "EE",
+        "FI",
+        "IE",
+        "GR",
+        "LU",
+        "LT",
+        "LV",
+        "PT",
+        "SI",
+        "SK",
+    ]
     expiry_list = ["gfd", "gtd", "gtc"]
     order_type_list = ["buy", "sell"]
 
@@ -188,10 +203,12 @@ class TRApi:
             "addToWatchlist",
             payload={"type": "addToWatchlist", "instrumentId": id},
             callback=callback,
-            key=f"addToWatchlist {id}"
+            key=f"addToWatchlist {id}",
         )
 
-    async def aggregate_history_light(self, isin, range="max", resolution=604800000, exchange="LSX", callback=print):
+    async def aggregate_history_light(
+        self, isin, range="max", resolution=604800000, exchange="LSX", callback=print
+    ):
         """aggregateHistoryLight request
 
         No login required
@@ -211,10 +228,12 @@ class TRApi:
 
         return await self.sub(
             "aggregateHistoryLight",
-            payload={"type": "aggregateHistoryLight",
-                     "range": range,
-                     "id": f"{isin}.{exchange}",
-                     "resolution": resolution},
+            payload={
+                "type": "aggregateHistoryLight",
+                "range": range,
+                "id": f"{isin}.{exchange}",
+                "resolution": resolution,
+            },
             callback=callback,
             key=f"aggregateHistoryLight {isin} {exchange} {range}",
         )
@@ -235,7 +254,7 @@ class TRApi:
             "cancelOrder",
             payload={"type": "cancelOrder", "orderId": id},
             callback=callback,
-            key=f"cancelOrder {id}"
+            key=f"cancelOrder {id}",
         )
 
     # todo cancelPriceAlarm
@@ -246,7 +265,7 @@ class TRApi:
             "cancelSavingsPlan",
             payload={"type": "cancelSavingsPlan", "id": id},
             callback=callback,
-            key=f"cancelSavingsPlan {id}"
+            key=f"cancelSavingsPlan {id}",
         )
 
     async def cash(self, callback=print):
@@ -255,15 +274,17 @@ class TRApi:
 
     # todo changeOrder
 
-    async def change_savings_plan(self, id, isin, amount, startDate, interval, warnings_shown,
-                                  callback=print):  # todo what is warningsshown?
+    async def change_savings_plan(
+        self, id, isin, amount, startDate, interval, warnings_shown, callback=print
+    ):  # todo what is warningsshown?
         """changeSavingsPlan request"""
 
-        params = {"instrumentId": isin,
-                  "amount": amount,
-                  "startDate": startDate,
-                  "interval": interval
-                  }
+        params = {
+            "instrumentId": isin,
+            "amount": amount,
+            "startDate": startDate,
+            "interval": interval,
+        }
 
         return await self.sub(
             "changeSavingsPlan",
@@ -274,7 +295,7 @@ class TRApi:
                 "warningsShown": warnings_shown,
             },
             callback=callback,
-            key=f"changeSavingsPlan {id}"
+            key=f"changeSavingsPlan {id}",
         )
 
     # todo collection
@@ -298,15 +319,17 @@ class TRApi:
             key=f"createPriceAlarm {isin} {target_price}",
         )
 
-    async def create_savings_plan(self, isin, amount, startDate, interval, warnings_shown,
-                                  callback=print):  # todo what is warningsshown?
+    async def create_savings_plan(
+        self, isin, amount, startDate, interval, warnings_shown, callback=print
+    ):  # todo what is warningsshown?
         """createSavingsPlan request"""
 
-        params = {"instrumentId": isin,
-                  "amount": amount,
-                  "startDate": startDate,
-                  "interval": interval
-                  }
+        params = {
+            "instrumentId": isin,
+            "amount": amount,
+            "startDate": startDate,
+            "interval": interval,
+        }
 
         return await self.sub(
             "createSavingsPlan",
@@ -316,7 +339,7 @@ class TRApi:
                 "warningsShown": warnings_shown,
             },
             callback=callback,
-            key=f"createSavingsPlan {params} {warnings_shown}"
+            key=f"createSavingsPlan {params} {warnings_shown}",
         )
 
     # todo cryptoDetails
@@ -328,8 +351,12 @@ class TRApi:
         """frontendExperiment request"""
         return await self.sub(
             "frontendExperiment",
-            payload={"type": "frontendExperiment", "operation": operation, "experimentId": experimentId,
-                     "identifier": identifier},
+            payload={
+                "type": "frontendExperiment",
+                "operation": operation,
+                "experimentId": experimentId,
+                "identifier": identifier,
+            },
             callback=callback,
             key=f"frontendExperiment {operation} {experimentId} {identifier}",
         )
@@ -395,18 +422,29 @@ class TRApi:
         """derivatives request"""
         return await self.sub(
             "derivatives",
-            payload={"type": "derivatives", "underlying": isin, "productCategory": product_category},
+            payload={
+                "type": "derivatives",
+                "underlying": isin,
+                "productCategory": product_category,
+            },
             callback=callback,
             key=f"derivatives {isin}",
         )
 
-    async def neon_search(self, query="", page=1, page_size=20, instrument_type="stock", jurisdiction="DE",
-                          callback=print):
+    async def neon_search(
+        self,
+        query="",
+        page=1,
+        page_size=20,
+        instrument_type="stock",
+        jurisdiction="DE",
+        callback=print,
+    ):
         """neonSearch request
 
-        No login required
-#todo params
-        :return: list of instruments"""
+                No login required
+        #todo params
+                :return: list of instruments"""
 
         if instrument_type not in self.instrument_list:
             raise TRapiException(f"type must be either one of {self.instrument_list}")
@@ -414,14 +452,12 @@ class TRApi:
         if jurisdiction not in self.jurisdiction_list:
             raise TRapiException(f"Jurisdiction must be either one of {self.jurisdiction_list}")
 
-        filter = [{"key": "type", "value": instrument_type},
-                  {"key": "jurisdiction", "value": jurisdiction},
-                  # [{"key": "relativePerformance", "value": "VAL"}]  # todo: are there more filters?
-                  ]
-        data = {"q": query,
-                "page": page,
-                "pageSize": page_size,
-                "filter": filter}
+        filter = [
+            {"key": "type", "value": instrument_type},
+            {"key": "jurisdiction", "value": jurisdiction},
+            # [{"key": "relativePerformance", "value": "VAL"}]  # todo: are there more filters?
+        ]
+        data = {"q": query, "page": page, "pageSize": page_size, "filter": filter}
         await self.sub(
             "neonSearch",
             callback=callback,
@@ -429,8 +465,15 @@ class TRApi:
             key=f"neonSearch {query} {page} {page_size} {filter}",
         )
 
-    async def neon_search_aggregations(self, query="", page=1, page_size=20, instrument_type="stock", jurisdiction="DE",
-                                       callback=print):
+    async def neon_search_aggregations(
+        self,
+        query="",
+        page=1,
+        page_size=20,
+        instrument_type="stock",
+        jurisdiction="DE",
+        callback=print,
+    ):
         """neonSearchAggregations request
 
         No login required
@@ -443,14 +486,12 @@ class TRApi:
         if jurisdiction not in self.jurisdiction_list:
             raise TRapiException(f"Jurisdiction must be either one of {self.jurisdiction_list}")
 
-        filter = [{"key": "type", "value": instrument_type},
-                  {"key": "jurisdiction", "value": jurisdiction},
-                  # [{"key": "relativePerformance", "value": "VAL"}]  # todo: are there more filters?
-                  ]
-        data = {"q": query,
-                "page": page,
-                "pageSize": page_size,
-                "filter": filter}
+        filter = [
+            {"key": "type", "value": instrument_type},
+            {"key": "jurisdiction", "value": jurisdiction},
+            # [{"key": "relativePerformance", "value": "VAL"}]  # todo: are there more filters?
+        ]
+        data = {"q": query, "page": page, "pageSize": page_size, "filter": filter}
         await self.sub(
             "neonSearchAggregations",
             callback=callback,
@@ -461,8 +502,9 @@ class TRApi:
     async def neon_search_suggested_tags(self, query="", callback=print):
         """neonSearchSuggestedTags request"""
 
-        data = {"q": query,
-                }
+        data = {
+            "q": query,
+        }
         await self.sub(
             "neonSearchSuggestedTags",
             callback=callback,
@@ -490,7 +532,7 @@ class TRApi:
             "neonNews",
             callback=callback,
             payload={"type": "neonNews", "isin": isin},
-            key=f"news {isin}"
+            key=f"news {isin}",
         )
 
     # todo newsSubscriptions
@@ -501,7 +543,8 @@ class TRApi:
             "orders",
             callback=callback,
             payload={"type": "orders", "terminated": terminated},
-            key=f"orders {terminated}")
+            key=f"orders {terminated}",
+        )
 
     # todo  performance
 
@@ -536,31 +579,30 @@ class TRApi:
             "orders",
             callback=callback,
             payload={"type": "removeFromWatchlist", "instrumentId": instrument_id},
-            key=f"removeFromWatchlist {instrument_id}")
+            key=f"removeFromWatchlist {instrument_id}",
+        )
 
     # todo savingsPlanParameters
     # todo  savingsPlans
     # todo  settings
 
     async def simple_create_order(
-            self,
-            order_id,
-            isin,
-            order_type,
-            size,
-            limit,
-            expiry,
-            exchange="LSX",
-            callback=print,
+        self,
+        order_id,
+        isin,
+        order_type,
+        size,
+        limit,
+        expiry,
+        exchange="LSX",
+        callback=print,
     ):
         """simpleCreateOrder request"""
         if expiry not in self.expiry_list:
             raise TRapiException(f"Expiry must be either of {self.expiry_list}")
 
         if order_type not in self.order_type_list:
-            raise TRapiException(
-                f"order_Type must be either of {self.order_type_list}"
-            )
+            raise TRapiException(f"order_Type must be either of {self.order_type_list}")
 
         if exchange not in self.exchange_list:
             raise TRapiException(f"exchange must be either one of {self.exchange_list}")
@@ -599,7 +641,10 @@ class TRApi:
         await self.sub(
             "stockDetailDividends",
             callback=callback,
-            payload={"type": "stockDetailDividends", "id": isin},  # todo: variable jurisdiction , "jurisdiction": "DE"?
+            payload={
+                "type": "stockDetailDividends",
+                "id": isin,
+            },  # todo: variable jurisdiction , "jurisdiction": "DE"?
             key=f"stockDetailDividends {isin}",
         )
 
@@ -614,7 +659,10 @@ class TRApi:
         await self.sub(
             "stockDetailKpis",
             callback=callback,
-            payload={"type": "stockDetailKpis", "id": isin},  # todo: variable jurisdiction , "jurisdiction": "DE"?
+            payload={
+                "type": "stockDetailKpis",
+                "id": isin,
+            },  # todo: variable jurisdiction , "jurisdiction": "DE"?
             key=f"stockDetailKpis {isin}",
         )
 
@@ -631,7 +679,10 @@ class TRApi:
         await self.sub(
             "stockDetails",
             callback=callback,
-            payload={"type": "stockDetails", "id": isin},  # todo: variable jurisdiction , "jurisdiction": "DE"?
+            payload={
+                "type": "stockDetails",
+                "id": isin,
+            },  # todo: variable jurisdiction , "jurisdiction": "DE"?
             key=f"stockDetails {isin}",
         )
 
@@ -718,18 +769,19 @@ class TRApi:
 
     @deprecated(reason="Use function simple_create_order")
     async def limit_order(
-            self,
-            order_id,
-            isin,
-            order_type,
-            size,
-            limit,
-            expiry,
-            exchange="LSX",
-            callback=print,
+        self,
+        order_id,
+        isin,
+        order_type,
+        size,
+        limit,
+        expiry,
+        exchange="LSX",
+        callback=print,
     ):
-        await self.simple_create_order(order_id, isin, order_type, size, limit, expiry, exchange=exchange,
-                                       callback=callback)
+        await self.simple_create_order(
+            order_id, isin, order_type, size, limit, expiry, exchange=exchange, callback=callback
+        )
 
     @deprecated(reason="Use function aggregate_history_light")
     async def stock_history(self, isin, range="max", callback=print):
@@ -772,7 +824,8 @@ class TRApi:
                     self.latest_response = {}
                     # return None
                 raise TRapiExcServerErrorState(
-                    f"Error during server access\n\tServer-side Object probably expired...\n\t{sErr}")
+                    f"Error during server access\n\tServer-side Object probably expired...\n\t{sErr}"
+                )
                 # continue
             else:
                 sErr = f"ERROR UNKNOWN state: {state} data: {data}"
@@ -847,13 +900,12 @@ class TRApi:
 
         rsp = ""
         for x in payload:
-
             instruction = x[0]
             rst = x[1:]
 
             if instruction == "=":
                 num = int(rst)
-                rsp += latest[cur: (cur + num)]
+                rsp += latest[cur : (cur + num)]
                 cur += num
             elif instruction == "-":
                 cur += int(rst)
@@ -874,9 +926,7 @@ class TrBlockingApi(TRApi):
         await f
         res = None
         try:
-            res = await asyncio.wait_for(
-                super().start(receive_one=True), timeout=self.timeout
-            )
+            res = await asyncio.wait_for(super().start(receive_one=True), timeout=self.timeout)
             return res
         except Exception as e:
             raise e
@@ -886,13 +936,15 @@ class TrBlockingApi(TRApi):
 
     def aggregate_history_light(self, isin, range="max", resolution=604800000, exchange="LSX"):
         return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().aggregate_history_light(isin, range=range, resolution=resolution, exchange=exchange))
+            self.get_one(
+                super().aggregate_history_light(
+                    isin, range=range, resolution=resolution, exchange=exchange
+                )
+            )
         )
 
     def available_cash(self):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().available_cash())
-        )
+        return asyncio.get_event_loop().run_until_complete(self.get_one(super().available_cash()))
 
     def available_cash_for_payout(self):
         return asyncio.get_event_loop().run_until_complete(
@@ -903,31 +955,36 @@ class TrBlockingApi(TRApi):
         return asyncio.get_event_loop().run_until_complete(self.get_one(super().cash()))
 
     def instrument(self, id):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().instrument(id))
-        )
+        return asyncio.get_event_loop().run_until_complete(self.get_one(super().instrument(id)))
 
-    def neon_search(self, query="", page=1, page_size=20, instrument_type="stock", jurisdiction="DE", ):
+    def neon_search(
+        self,
+        query="",
+        page=1,
+        page_size=20,
+        instrument_type="stock",
+        jurisdiction="DE",
+    ):
         return asyncio.get_event_loop().run_until_complete(
             self.get_one(
-                super().neon_search(query=query, page=page, page_size=page_size, instrument_type=instrument_type,
-                                    jurisdiction=jurisdiction))
+                super().neon_search(
+                    query=query,
+                    page=page,
+                    page_size=page_size,
+                    instrument_type=instrument_type,
+                    jurisdiction=jurisdiction,
+                )
+            )
         )
 
     def neon_news(self, isin):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().neon_news(isin))
-        )
+        return asyncio.get_event_loop().run_until_complete(self.get_one(super().neon_news(isin)))
 
     def orders(self):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().orders())
-        )
+        return asyncio.get_event_loop().run_until_complete(self.get_one(super().orders()))
 
     def portfolio(self):
-        return asyncio.get_event_loop().run_until_complete(
-            self.get_one(super().portfolio())
-        )
+        return asyncio.get_event_loop().run_until_complete(self.get_one(super().portfolio()))
 
     def portfolio_aggregate_history(self, range="max"):
         return asyncio.get_event_loop().run_until_complete(

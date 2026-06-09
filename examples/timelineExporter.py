@@ -1,12 +1,12 @@
 import sys
 
 sys.path.append("../")
-from trapi.api import TrBlockingApi
+import json
+import time
 
 from environment import *
 
-import json
-import time
+from trapi.api import TrBlockingApi
 
 tr = TrBlockingApi(NUMBER, PIN, locale=LOCALE)
 tr.login()

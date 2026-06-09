@@ -1,14 +1,14 @@
 import sys
 
 sys.path.append("../")
-from trapi.api import TrBlockingApi
+import argparse
+import json
+import os
+import time
 
 from environment import *
 
-import json
-import time
-import argparse
-import os
+from trapi.api import TrBlockingApi
 
 # This folder is used to store alle single ISIN files
 OUTPUT_FOLDER = "./stock_details/"
@@ -40,7 +40,7 @@ if args.isin != None:
     isins.append(args.isin)
 if args.file != None:
     try:
-        with open(args.file, "r") as f:
+        with open(args.file) as f:
             lines = f.readlines()
             for line in lines:
                 isins.append(line.rstrip())
@@ -49,7 +49,7 @@ if args.file != None:
         exit()
 if args.portfolio == True:
     try:
-        with open("./myPortfolio.json", "r") as f:
+        with open("./myPortfolio.json") as f:
             portfolio = json.loads(f.read())
             for position in portfolio["positions"]:
                 isins.append(position["instrumentId"])
@@ -71,7 +71,7 @@ if len(isins) > 0:
 
         retry = 0
         while True:
-            print("Processing {0}".format(isin))
+            print(f"Processing {isin}")
             res = tr.stock_details(isin)
             print(res)
 
@@ -83,7 +83,7 @@ if len(isins) > 0:
                     tr.login()
             else:
                 # Write JSON file
-                with open("{0}{1}.json".format(OUTPUT_FOLDER, isin), "w") as f:
+                with open(f"{OUTPUT_FOLDER}{isin}.json", "w") as f:
                     json.dump(res, f, indent="\t")
                 break
 
@@ -94,7 +94,7 @@ if args.combine == True:
     for filename in os.listdir(OUTPUT_FOLDER):
         print("Processing " + filename)
         stock = {}
-        with open(OUTPUT_FOLDER + filename, "r") as f:
+        with open(OUTPUT_FOLDER + filename) as f:
             stock = json.loads(f.read())
         # Remove useless stuff
         del stock["hasKpis"]
