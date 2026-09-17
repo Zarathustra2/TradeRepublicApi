@@ -27,6 +27,65 @@ Trade Republic only allows one device to be registered at the same time. So if y
 
 Also running it the first time will likely error but then running it for the second time will work. Have to debug this but not much time.
 
+## API compatibility
+
+Trade Republic changes its backend without notice. The state below was verified
+against the live API in August 2026.
+
+### Websocket protocol version
+
+The `connect` frame carries a protocol version. Versions below 26 are refused
+with `failed <latest supported version>` - this is the cause of the
+`Connection Error: failed 30` / `failed 32` reports. The library sends version
+31 by default and accepts an override:
+
+```python3
+tr = TrBlockingApi(NUMBER, PIN, connect_version=34)
+```
+
+### Renamed and removed subscriptions
+
+| removed | use instead |
+| --- | --- |
+| `portfolio`, `compactPortfolio` | `compact_portfolio_by_type()` |
+| `timeline` | `timeline_transactions()`, `timeline_activity_log()` |
+| `timelineDetail` | `timeline_detail()` (now sends `timelineDetailV2`) |
+| `timelineActions` | `timeline_actions_v2()` |
+| `instrumentExchange` | `home_instrument_exchange()` |
+
+Removed without a replacement, the server answers them with
+`BAD_SUBSCRIPTION_TYPE`: `portfolioAggregateHistory`,
+`portfolioAggregateHistoryLight`, `neonCards`, `messageOfTheDay`,
+`instrumentSuitability`, `frontendExperiment`, `settings`, `bondDetails`,
+`subscribeNews`, `unsubscribeNews`, `newsSubscriptions`, `confirmOrder`,
+`orderOverview`, `stockOrderDetails` and `cashAvailableForOrder`. The
+corresponding methods are kept but marked as deprecated.
+
+### Newly wired up
+
+`performance()`, `etf_details()`, `etf_composition()`, `crypto_details()`,
+`savings_plans()`, `watchlists()`, `trading_perk_condition_status()` and
+`timeline_actions_v2()`.
+
+### Other behaviour worth knowing
+
+- `aggregate_history_light()` no longer sends a `resolution` by default. The
+  server silently discards subscriptions that carry one, so the request would
+  simply never be answered.
+- Prices are now delivered as JSON strings (`"265.5"`) rather than numbers.
+
+## Tests
+
+The offline tests drive the client against a fake websocket and need no
+account:
+
+```
+make test
+```
+
+`make test-live` additionally runs smoke tests against the real API, using only
+the topics that are served without a token.
+
 ## Example blocking history
 ```python3
 from api import TrBlockingApi
