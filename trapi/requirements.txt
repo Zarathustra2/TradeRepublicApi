@@ -1,4 +1,4 @@
 ecdsa
 requests
 websockets
-getpass4
+Deprecated

@@ -87,3 +87,8 @@ _docDownloads/
 _storedOutputs/_bckp/
 .idea/misc.xml
 .idea/trRep3.iml
+
+# Build artefacts
+build/
+dist/
+*.egg-info/

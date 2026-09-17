@@ -1,3 +1,23 @@
+# Status (August 2026)
+
+Trade Republic hat das `timeline` Topic durch `timelineTransactions` und
+`timelineActivityLog` ersetzt. Damit hat sich auch der Aufbau der Eintraege
+geaendert: die Antwort enthaelt `items` statt `data`, die Eintraege sind flach
+statt in `{"type": ..., "data": {...}}` verpackt, und Zeitstempel kommen als
+ISO-String statt als Millisekunden.
+
+Angepasst sind `portfolioExporter.py` und `timelineExporter.py`.
+
+**Noch nicht angepasst** sind `timelineExporterWithDocsAndDetails.py`,
+`timelineCsvConverter.py` und `timelineCSVconvWithDetails.py`. Diese Skripte
+werten die alte Struktur an vielen Stellen aus und parsen zusaetzlich die
+deutschen Fliesstexte der Eintraege. Das laesst sich nur mit einem echten
+Konto zuverlaessig umstellen.
+
+`timelineExporter.py` schreibt die Transaktionen weiterhin nach
+`myTimeline.json` und den Aktivitaetsverlauf zusaetzlich nach
+`myActivityLog.json`.
+
 # Beispiele
 Für diese Beispiele die Datei environment_template.py in environment.py umbenennen und die Trade Republic Login Datein eintragen.
 

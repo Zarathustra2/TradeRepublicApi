@@ -1,3 +1,7 @@
+# NOTE: This script has not been adapted to the current API yet. It reads the
+# old timeline structure (res["data"], d["data"]["id"], epoch timestamps),
+# which Trade Republic replaced. See examples/README.md.
+
 #################################################################################################################
 # PREREQUISITES:
 #     0. environment_template.py to environment.py and fill the correct data
