@@ -19,9 +19,6 @@ myPortfolio.json
 allStocks.json
 stock_details/
 _storedOutputs/_bkp/
-_docDownloads/
-_docDownloads/**
-_docDownloads/*.*
 environment.py
 myPositions.csv
 # These are some examples of commonly ignored file patterns.
@@ -47,7 +44,6 @@ dist/
 
 # Maven
 target/
-dist/
 
 # IDE - I prefer to gave these in the local repo
 #.idea/
@@ -75,8 +71,6 @@ Thumbs.db
 *.mov
 *.wmv
 
-#>>>>>>> ab575f930a8e62390bf50ad847e92bba46f65d8a
-=======
 myTransactions.csv
 
 _docDownloads/
@@ -85,5 +79,3 @@ _docDownloads/
 # prefer to keep them in the local repo
 #_storedOutputs/
 _storedOutputs/_bckp/
-.idea/misc.xml
-.idea/trRep3.iml
