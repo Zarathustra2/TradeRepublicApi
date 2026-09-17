@@ -1,213 +1,107 @@
+"""Turns an exported timeline into a CSV for Portfolio Performance.
+
+    python3 timelineExporterWithDocsAndDetails.py
+    python3 timelineCsvConverter.py
+
+Reads myTimeline.json and, when it is there, myTimelineDetails.json, and
+writes myTransactions.csv.
+
+Without the details there are no share counts, no prices and no isins,
+because a timeline entry carries none of those - only its total amount. The
+converter still writes those entries, with the columns left empty.
+
+Entries whose eventType the converter does not know are reported at the end
+rather than dropped in silence, so a new kind of event does not quietly
+disappear from the export.
+"""
+
+import sys
+
+sys.path.append("../")
+
 import json
-import re
-from datetime import datetime
-from environment import LOCALE
-from environment import CURRENCY
+import os
+from collections import Counter
 
-# Read my timeline
-with open("myTimeline.json", "r", encoding="utf-8") as f:
-    timeline = json.loads(f.read())
+from trapi.timeline import (
+    EVENT_TYPES,
+    NOT_EXPORTED,
+    transaction_of,
+    write_csv,
+)
 
-# Read stock JSON data
-with open("../LS/isins.json", "r", encoding="utf-8") as f:
-    lsIsins = json.loads(f.read())
+from environment import *
 
-# All stocks crawled from TR
-with open("allStocks.json", "r", encoding="utf-8") as f:
-    allStocks = json.loads(f.read())
-    companyNames = {}
-    for stock in allStocks:
-        companyNames[stock["company"]["name"]] = stock["isin"]
-
-# Fixed ISINs
-with open("companyNameIsins.json", "r", encoding="utf-8") as f:
-    fixedIsins = json.loads(f.read())
+TIMELINE_FILE = "./myTimeline.json"
+DETAILS_FILE = "./myTimelineDetails.json"
+CSV_FILE = "./myTransactions.csv"
 
 
-# Extract decimal number in a string
-def getDecimalFromString(inputString):
-    try:
-        numbers = re.findall("[-+]?\d.*\,\d+|\d+", inputString)
-        return numbers[0].replace(".", "").replace(",", ".")
-    except:
-        return None
-    return None
+
+def load(path, default=None):
+    if not os.path.isfile(path):
+        return default
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
-# Unify a company name to compare
-# Trade Republic uses different company names. This makes it very hard to map the timeline events to companies.
-# @TradeRepublic: Please add ISIN in timeline event JSON
-def unifyCompanyName(inputString):
-    unify = "".join(e for e in inputString if e.isalnum()).lower()
-    return unify
+def main():
+    items = load(TIMELINE_FILE)
+    if items is None:
+        raise SystemExit(
+            f"{TIMELINE_FILE} is missing - run timelineExporterWithDocsAndDetails.py first"
+        )
 
+    details = load(DETAILS_FILE, {})
+    if not details:
+        print(f"note: {DETAILS_FILE} is missing, "
+              "shares, prices and isins will stay empty")
 
-# Return ISIN from company name. Uses the JSON object from isins.json
-# Returns None, if no ISIN found
-def getIsinFromStockName(stockName):
-    try:
-        return companyNames[stockName]
-    except:
-        try:
-            # Try to get the ISIN from the fixed list
-            return fixedIsins[stockName]
-        except:
-            stockNameUnify = unifyCompanyName(stockName)
-            for stock in lsIsins:
-                try:
-                    isin = stock[1]
-                    name = stock[2]
-                    nameUnify = unifyCompanyName(stock[2])
-                    if stockNameUnify in nameUnify:
-                        return isin
-                except:
-                    continue
-    return ""
+    transactions = []
+    skipped = Counter()
 
-
-# Portfolio Performance transaction types
-# Kauf, Einlage, Verkauf, Zinsen, Gebühren, Dividende, Umbuchung (Eingang), Umbuchung (Ausgang)
-# Buy, Deposit, Sell, Interest, Fees, Dividends, Transfer (Inbound), Transfer (Outbound)
-
-missingIsins = {}
-
-# Write transactions.csv file
-# date, transaction, shares, amount, total, fee, isin, name
-with open("myTransactions.csv", "w") as f:
-    if LOCALE == "de":
-        f.write("Datum;Typ;Stück;Wechselkurs;Wert;Gebühren;ISIN;Name;Buchungswährung\n")
-    else:
-        f.write("Date;Type;Amount;Value;Price;Fees;ISIN;Name;Currency\n")
-    for event in timeline:
-        event = event["data"]
-        dateTime = datetime.fromtimestamp(int(event["timestamp"] / 1000))
-        date = dateTime.strftime("%Y-%m-%d")
-
-        title = event["title"]
-        try:
-            body = event["body"]
-        except:
-            body = ""
-
-        if "storniert" in body or "cancelled" in body:
+    for item in items:
+        if not isinstance(item, dict):
             continue
 
-        # Cash in
-        if title == "Einzahlung" or title == "Cash In":
-            f.write(
-                "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
-                    date, "Einlage" if LOCALE == "de" else "Cash In", "", "", event["cashChangeAmount"], "", "", "",CURRENCY
-                )
-            )
+        # No fixed decimal separator: one and the same response mixes
+        # "€26.55" and "9,99 €", so each value is read on its own.
+        transaction = transaction_of(item, details.get(item.get("id")))
+        if transaction is None:
+            event_type = item.get("eventType") or "without an eventType"
+            known = event_type in EVENT_TYPES
+            skipped["cancelled or deleted" if known else event_type] += 1
+            continue
 
-        elif title == "Auszahlung" or title == "Cash Out":
-            f.write(
-                "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
-                    date, "Entnahme" if LOCALE == "de" else "Cash Out", "", "", abs(event["cashChangeAmount"]), "", "", "",CURRENCY
-                )
-            )
+        transactions.append(transaction)
 
-        # Dividend - Shares
-        elif title == "Reinvestierung" or title == "Reinvestment":
-            # TODO: Implement reinvestment
-            print("Detected reinvestment, skipping... (not implemented yet)")
+    transactions.sort(key=lambda t: (t.date is None, t.date))
 
-        # Dividend - Cash
-        elif "Gutschrift Dividende" in body or "Dividend per" in body:
-            isin = getIsinFromStockName(title)
-            amountPerShare = getDecimalFromString(body)
-            f.write(
-                "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
-                    date,
-                    "Dividende" if LOCALE == "de" else "Dividend",
-                    "",
-                    amountPerShare,
-                    event["cashChangeAmount"],
-                    "",
-                    isin,
-                    title,
-                    CURRENCY,
-                )
-            )
-            if isin == "" and title not in missingIsins.keys():
-                missingIsins[title] = ""
-                print("WARNING: Company not found ({0}), missing ISIN".format(title))
+    with open(CSV_FILE, "w", newline="", encoding="utf-8") as f:
+        write_csv(transactions, f, locale=LOCALE)
 
-        # Savings plan execution or normal buy
-        elif (
-            body.startswith("Sparplan ausgeführt")
-            or body.startswith("Kauf")
-            or body.startswith("Limit Kauf zu")
-            or body.startswith("Savings Plan executed")
-            or body.startswith("Buy order")
-            or body.startswith("Limit Buy order")
-        ):
-            fee = 0
-            if (
-                body.startswith("Kauf") or body.startswith("Limit Kauf zu")
-                or body.startswith("Buy order") or body.startswith("Limit Buy order")
-            ):
-                fee = 1.0
-            isin = getIsinFromStockName(title)
-            amountPerShare = abs(float(getDecimalFromString(body)))
-            cashChangeAmount = abs(event["cashChangeAmount"])
-            shares = "{0:.4f}".format((cashChangeAmount - fee) / amountPerShare)
-            f.write(
-                "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
-                    date,
-                    "Kauf" if LOCALE == "de" else "Buy",
-                    shares,
-                    amountPerShare,
-                    cashChangeAmount,
-                    fee,
-                    isin,
-                    title,
-                    CURRENCY,
-                )
-            )
-            if isin == "" and title not in missingIsins.keys():
-                missingIsins[title] = ""
-                print("WARNING: Company not found ({0}), missing ISIN".format(title))
+    print(f"{len(transactions)} transactions written to {CSV_FILE}")
 
-        # Sell
-        elif (
-            (body.startswith("Verkauf") and not body.__contains__("Verkauf-Order abgelehnt"))
-            or body.startswith("Limit Verkauf zu")
-            or (body.startswith("Sell order") and not body.__contains__("Sell order declined"))
-            or body.startswith("Limit Sell order")
-        ):
-            isin = getIsinFromStockName(title)
-            taxRate = 0.2782
-            profit = abs(float(re.findall("[-+]?\d.*\.\d+|\d+", body)[1].replace(",", "")) / 100) #as decimal (percentage)
-            amountPerShare = abs(float(getDecimalFromString(body)))
-            cashChangeAmount = abs(event["cashChangeAmount"])
-            buy = (cashChangeAmount + 1) / (1 + profit - profit * taxRate)
-            sell = buy * (1 + profit)
-            taxes = sell * taxRate
-            if len(isin) > 4: #round to account for errors while calculating taxes
-                shares = "{0:.4f}".format(cashChangeAmount / amountPerShare)
+    without_isin = sum(1 for t in transactions
+                       if t.isin is None and t.kind in ("buy", "sell"))
+    if without_isin:
+        print(f"{without_isin} trades have no isin - their detail was missing")
+
+    if skipped:
+        print("\nnot exported:")
+        unknown = False
+        for reason, count in skipped.most_common():
+            explanation = NOT_EXPORTED.get(reason)
+            if explanation:
+                print(f"  {count:>5}  {reason} - {explanation}")
             else:
-                shares = "{0:.4f}".format(sell / amountPerShare)
-            f.write(
-                "{0};{1};{2};{3};{4};{5};{6};{7};{8}\n".format(
-                    date,
-                    "Verkauf" if LOCALE == "de" else "Sell",
-                    shares,
-                    amountPerShare,
-                    cashChangeAmount,
-                    "1.0",
-                    isin,
-                    title,
-                    CURRENCY,
-                )
-            )
-            if isin == "" and title not in missingIsins.keys():
-                missingIsins[title] = ""
-                print("WARNING: Company not found ({0}), missing ISIN".format(title))
+                print(f"  {count:>5}  {reason}")
+                unknown = reason not in ("cancelled or deleted",)
+        if unknown:
+            print("\nAn eventType listed without a reason is one this "
+                  "converter does not know yet. If it belongs in the export, "
+                  "add it to EVENT_TYPES in trapi/timeline.py.")
 
-if len(missingIsins.keys()) > 0:
-    print("--- MISSING ISINs ---")
-    print(json.dumps(missingIsins, indent="\t", sort_keys=True))
-    print("Add ISINs to companyNameIsins.json and start again\n")
 
-print("Finished!")
+if __name__ == "__main__":
+    main()
