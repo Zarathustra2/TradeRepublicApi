@@ -21,7 +21,8 @@ async def main():
     tr = TRApi(NUMBER, PIN, LOCALE)
     tr.login()
 
-    await tr.portfolio(callback=process)
+    # The portfolio and compactPortfolio topics were removed by Trade Republic.
+    await tr.compact_portfolio_by_type(callback=process)
 
     await tr.start()
 

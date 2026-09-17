@@ -7,3 +7,8 @@ help:
 fmt: ## Formats everything
 	black .
 
+test: ## Runs the offline tests
+	python -m unittest discover -s tests -v
+
+test-live: ## Runs the offline tests plus smoke tests against the real API
+	TRAPI_LIVE_TESTS=1 python -m unittest discover -s tests -v
