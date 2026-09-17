@@ -1,0 +1,50 @@
+name: tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install the package
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+
+      - name: Run the offline tests
+        # The tests against the live API stay opt-in, they would make the
+        # pipeline depend on Trade Republic being reachable.
+        run: python -m unittest discover -s tests -v
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the distribution
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Check that the package data is included
+        run: |
+          pip install dist/*.whl
+          cd /tmp && python -c "from trapi.api import TRApi; assert TRApi.all_isins()"

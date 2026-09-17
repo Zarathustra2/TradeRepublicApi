@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "TradeRepublicApi"
+version = "0.2.0"
+description = "Unofficial API for the German broker Trade Republic"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+keywords = ["trade republic", "broker", "trading", "api", "websocket"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = [
+    "Deprecated",
+    "ecdsa",
+    "requests",
+    "websockets",
+]
+
+[project.optional-dependencies]
+# Only the scripts in examples/ need this, the library itself does not.
+examples = ["getpass4"]
+
+[project.urls]
+Homepage = "https://github.com/Zarathustra2/TradeRepublicApi"
+Issues = "https://github.com/Zarathustra2/TradeRepublicApi/issues"
+
+[tool.setuptools]
+packages = ["trapi"]
+
+[tool.setuptools.package-data]
+# all_isins() reads this at runtime, so it has to ship with the package.
+trapi = ["isins.txt"]
