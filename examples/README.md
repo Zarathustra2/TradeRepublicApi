@@ -1,20 +1,85 @@
+# Status (August 2026)
+
+Trade Republic hat die Timeline umgestellt. `timelineTransactions` und
+`timelineActivityLog` haben `timeline` ersetzt, die Eintraege sind flach statt
+verschachtelt, Zeitstempel kommen als ISO-String und der Betrag steckt in
+`amount`. `timelineDetailV2` liefert keine Felder mehr, sondern die
+Beschreibung eines Bildschirms: Abschnitte mit beschrifteten Tabellenzeilen.
+
+Alle Skripte hier sind darauf umgestellt. Die Auswertung steckt in
+`trapi/timeline.py` und ist getestet; die Skripte hier sind nur noch das
+Drumherum.
+
+**Die ISIN kommt jetzt direkt aus der API.** Sie steht im Kopfabschnitt des
+Details. Der ganze Umweg ueber Firmennamen entfaellt damit: `allStocks.json`,
+`companyNameIsins.json` und die Meldung "WARNING: Company not found" braucht
+niemand mehr.
+
+`timelineCSVconvWithDetails.py` ist entfallen. Es tat dasselbe wie
+`timelineCsvConverter.py`, nur mit Details - und der Konverter benutzt die
+Details jetzt ohnehin. `envConsts.py` ist damit auch weg.
+
 # Beispiele
-Für diese Beispiele die Datei environment_template.py in environment.py umbenennen und die Trade Republic Login Datein eintragen.
+Für diese Beispiele die Datei environment_template.py in environment.py umbenennen und die Trade Republic Login Daten eintragen.
 
-# ISINs
-Manche Unternehmensnamen können nicht automatisch gefunden werden. Um dennoch die ISINs automatisch im Export zu verwenden, können diese in der Datei companyNameIsins.json beliebig hinzugefügt werden.
+# Export für Portfolio Performance
+```bash
+python3 timelineExporterWithDocsAndDetails.py
+python3 timelineCsvConverter.py
+```
 
-# Skripte
-Folgende Skripte bilden ein Workspace um Aktien und Transaktionen von Trade Republic abzurufen und zu verarbeiten.
+Der erste Befehl meldet sich an, laedt die komplette Timeline samt Details und
+speichert die angehaengten Dokumente in `./_docDownloads`. Der zweite braucht
+keine Anmeldung und erzeugt `myTransactions.csv`.
+
+Eintraege, deren `eventType` der Konverter nicht kennt, werden am Ende
+aufgelistet statt stillschweigend weggelassen. Soll so eine Art in den Export,
+gehoert sie in `EVENT_TYPES` in `trapi/timeline.py`.
+
+Einige Arten sind absichtlich draussen und stehen mit Begruendung in
+`NOT_EXPORTED` - etwa `TRADE_INVOICE`, die Abrechnung zu einem Handel, der
+bereits unter seinem eigenen Ereignis exportiert wird. Sie mitzunehmen wuerde
+denselben Vorgang doppelt zaehlen.
+
+`CARD_TRANSACTION` ist dagegen drin, als Entnahme: Kartenzahlungen bewegen
+Geld auf dem Verrechnungskonto. Wer nur Wertpapiergeschaefte exportieren will,
+nimmt den Eintrag aus `EVENT_TYPES` heraus.
+
+## Zu den Beschriftungen
+
+`LABELS` in `trapi/timeline.py` sagt, aus welchen Zeilen die Werte gelesen
+werden. Zwei Eigenheiten der API stecken darin:
+
+* Es gibt **keine getrennten Zeilen fuer Stueckzahl und Kurs**. Ein Handel
+  rendert beides in einer Zeile als `0.347123 × €26.55`.
+* Die Beschriftungen haengen an der Sprache, in der die API antwortet
+  (`locale`). Deutsche und englische Varianten sind hinterlegt; fuer eine
+  andere Sprache gehoeren die dortigen Bezeichner ergaenzt.
+
+Die Zahlen selbst brauchen keine Einstellung. Trade Republic mischt die
+Schreibweisen innerhalb **einer** Antwort - `€26.55` neben `9,99 €` - deshalb
+wird pro Wert entschieden, welches Zeichen das Dezimaltrennzeichen ist.
+
+## timelineExporterWithDocsAndDetails.py
+Laedt Timeline und Details nach `myTimeline.json` und `myTimelineDetails.json`
+und die Dokumente nach `./_docDownloads`. Bereits geladene Dokumente werden
+uebersprungen.
+
+## timelineCsvConverter.py
+Erzeugt `myTransactions.csv` aus den beiden JSON-Dateien. Ohne
+`myTimelineDetails.json` laeuft er ebenfalls, dann bleiben Stueckzahl, Kurs
+und ISIN leer - die Timeline selbst kennt sie nicht.
+
+## timelineExporter.py
+Speichert nur die Timeline, ohne Details und Dokumente, nach
+`myTimeline.json` und `myActivityLog.json`.
 
 ## portfolioExporter.py
 Liest das aktuelle Portfolio von TR aus und speichert dieses als myPortfolio.json ab.
 
-## timelineExporter.py
-Speichert die komplette Timeline in myTimeline.json ab.
-
 ## isinDownloader.py
-Kann verwendet werden um die Stock Details abzufragen. Jede ISIN wird in einem Unterordner stock_details mit der ISIN als JSON Datei abgelegt.
+Fragt Stock Details ab. Fuer den CSV-Export wird das nicht mehr gebraucht, es
+ist aber weiterhin nuetzlich, um Stammdaten zu sammeln.
 
 usage: isinDownloader.py [-h] [-i ISIN] [-f FILE] [-p] [-c]
 
@@ -29,41 +94,3 @@ optional arguments:
 python3 isinDownloader.py -i US72919P2020
 python3 isinDownloader.py -f isins.txt
 ```
-
-Ist bereits die Portfolio Datei heruntergeladen, so können alle Aktien im Portfolio mit folgendem Befehl abgefragt werden:
-```bash
-python3 isinDownloader.py -p
-```
-
-Folgender Befehl erstellt eine einzelne allStocks.json Datei, welche alle heruntergeladenen ISINs kombiniert.
-```bash
-python3 isinDownloader.py -c
-```
-
-## timelineCsvConverter.py
-Konvertiert die Timeline in ein CSV Format. Damit dieses Skript richtig arbeitet, müssen alle gehandelten Aktien mit dem ISIN Downloader heruntergeladen sein.
-
-*ACHTUNG:* Einige Aktien heißen bei Lang und Schwarz anders, als in der Trade Republic App. Außerdem verwendet Trade Republic selbst zum Teil unterschiedliche Namen. Es kann vorkommen, dass nicht zu jeder Aktie die ISIN automatisch zugeordnet wird. In diesem Fall wird ein Fehler ausgegeben und die ISIN muss manuell in die CSV Datei kopiert werde.
-
-Der Export wurde für Portfolio Performance optimiert. Aktuell werden folgende Transaktionen verarbeitet:
-- Auszahlung
-- Einzahlung
-- Kauf
-- Sparplan Ausführung
-- Verkauf
-- Dividende
-
-# Export für Portfolio Performance
-*TODO:* Aktuell ist es noch nicht möglich, reinvestierte Dividenden zu exportieren.
-Mit den folgenden Skripten kann eine CSV Datei für Portfolio Performance erzeugt werden. 
-```bash
-python3 portfolioExporter.py
-python3 timelineExporter.py
-python3 isinDownloader.py -p -c
-python3 timelineCsvConverter.py
-```
-Sollte bei der Erstellung der CSV Datei "WARNING: Company not found" auftauchen, so können fehlende ISINs in der Datei companyNameIsins.json nachgetragen werden. Ein erneutes Ausführen von 
-```bash
-python3 timelineCsvConverter.py
-```
-sollte dann einen vollständigen Export liefern.

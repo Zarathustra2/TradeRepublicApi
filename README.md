@@ -1,17 +1,16 @@
-## Addendum to Export _Trade Republic_ Timeline as Excel(csv) 
+## Exporting the timeline as CSV
 
-This section only explains a specific use-case, which has been tested in the examples folder. 
+Copy `examples/environment_template.py` to `examples/environment.py` and put
+your account in it, then:
 
-**The rest of the readme is intentionally not modified.**
+```bash
+python3 ./examples/timelineExporterWithDocsAndDetails.py
+python3 ./examples/timelineCsvConverter.py
+```
 
-### Steps to use
-
-Important note: This use case is tested on Linux, python 3.8 and 
-with German Language only.
-
- - Update the ```./examples/envConsts.py``` file with appropriate path(s).
- - copy ```environment_template.py``` to ```environment.py``` and change it to match your TR account.
- - See the ```StartMe.sh``` linux command-line script for how it is used further.
+The first logs in, downloads the timeline with its details and saves the
+attached documents; the second turns that into `myTransactions.csv`.
+`startMe.sh` runs both. See `examples/README.md` for the details.
 
 ---
 
@@ -23,9 +22,135 @@ Unfortunately the previous owner has made his repo private. This is meant to be 
 
 Currently, this can be used to try out algorithmic trading or learning how to process a lot of data.
 
-Trade Republic only allows one device to be registered at the same time. So if you are currently logged in on your phone it will log you out from your phone.
+## Logging in
 
-Also running it the first time will likely error but then running it for the second time will work. Have to debug this but not much time.
+Trade Republic retired the device login this library used to rely on:
+`/api/v1/auth/login` answers with HTTP 426 `CLIENT_VERSION_OUTDATED` and the
+device registration is no longer served. The library uses the web login
+instead, which keeps its state in cookies rather than in a signed token.
+
+Trade Republic asks for a second factor. Newer accounts get a push
+notification that has to be approved in the app, older ones an SMS.
+
+```python3
+tr = TrBlockingApi(NUMBER, PIN)
+
+# Approval in the app: blocks until you confirm the push notification
+tr.login()
+
+# Code by SMS
+tr.login(code="123456")
+```
+
+For more control over the steps:
+
+```python3
+data = tr.start_login()                              # triggers the second factor
+tr.await_login_confirmation(data["processId"])       # waits for the app
+# or
+tr.verify_login(data["processId"], "123456")         # confirms with a code
+```
+
+Unlike the old device login, the web session does **not** log you out of the
+app - both can be active at the same time.
+
+### Keeping the session alive
+
+Trade Republic drops the session after a few minutes without traffic. Both
+APIs take care of that on their own:
+
+- `TRApi.start()` extends the session in the background while it runs.
+- `TrBlockingApi` extends it before a request when little time is left,
+  because nothing runs in between two blocking calls.
+
+So the usual case needs no attention. To do it yourself:
+
+```python3
+tr = TrBlockingApi(NUMBER, PIN, keep_session=False)
+...
+tr.refresh_session()               # extend it now
+tr.refresh_session_if_needed()     # extend it if the end is near
+tr.session_expires_in              # seconds the session should still last
+```
+
+`TRApi.start(keep_session=False)` does the same for the async API. Once the
+session is gone for good, `refresh_session()` raises `TRapiExcSessionExpired`,
+which says a new login is needed rather than that something went wrong on the
+way.
+
+How long a session lasts is not documented. `TRApi.session_lifetime` holds the
+assumption the refresh is scheduled against and errs on the careful side;
+raise or lower it if you measure something else.
+
+The methods of the old flow (`device_login()`, `register_new_device()`,
+`do_request()`) are kept but deprecated.
+
+## Installation
+
+```
+pip install .
+```
+
+The scripts in `examples/` additionally need `pip install .[examples]`.
+
+## API compatibility
+
+Trade Republic changes its backend without notice. The state below was verified
+against the live API in August 2026.
+
+### Websocket protocol version
+
+The `connect` frame carries a protocol version. Versions below 26 are refused
+with `failed <latest supported version>` - this is the cause of the
+`Connection Error: failed 30` / `failed 32` reports. The library sends version
+31 by default and accepts an override:
+
+```python3
+tr = TrBlockingApi(NUMBER, PIN, connect_version=34)
+```
+
+### Renamed and removed subscriptions
+
+| removed | use instead |
+| --- | --- |
+| `portfolio`, `compactPortfolio` | `compact_portfolio_by_type()` |
+| `timeline` | `timeline_transactions()`, `timeline_activity_log()` |
+| `timelineDetail` | `timeline_detail()` (now sends `timelineDetailV2`) |
+| `timelineActions` | `timeline_actions_v2()` |
+| `instrumentExchange` | `home_instrument_exchange()` |
+
+Removed without a replacement, the server answers them with
+`BAD_SUBSCRIPTION_TYPE`: `portfolioAggregateHistory`,
+`portfolioAggregateHistoryLight`, `neonCards`, `messageOfTheDay`,
+`instrumentSuitability`, `frontendExperiment`, `settings`, `bondDetails`,
+`subscribeNews`, `unsubscribeNews`, `newsSubscriptions`, `confirmOrder`,
+`orderOverview`, `stockOrderDetails` and `cashAvailableForOrder`. The
+corresponding methods are kept but marked as deprecated.
+
+### Newly wired up
+
+`performance()`, `etf_details()`, `etf_composition()`, `crypto_details()`,
+`savings_plans()`, `watchlists()`, `trading_perk_condition_status()` and
+`timeline_actions_v2()`.
+
+### Other behaviour worth knowing
+
+- `aggregate_history_light()` no longer sends a `resolution` by default. The
+  server silently discards subscriptions that carry one, so the request would
+  simply never be answered.
+- Prices are now delivered as JSON strings (`"265.5"`) rather than numbers.
+
+## Tests
+
+The offline tests drive the client against a fake websocket and need no
+account:
+
+```
+make test
+```
+
+`make test-live` additionally runs smoke tests against the real API, using only
+the topics that are served without a token.
 
 ## Example blocking history
 ```python3
